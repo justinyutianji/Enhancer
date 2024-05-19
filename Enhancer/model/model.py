@@ -261,8 +261,8 @@ class DanQ(nn.Module):
         x = nn.Dropout(0.5)(x)
         x = self.linear(x)
         return x
- #################################################################################
- # =============================================================================
+#################################################################################
+# =============================================================================
 # ConvNetDeep2
 # =============================================================================
 class ConvNetDeep2(nn.Module):
@@ -338,3 +338,109 @@ class ConvNetDeep2(nn.Module):
         activations, act_index = torch.max(activations, dim=2)
         if embeddings: return (o, activations, act_index, em)
         return o
+
+# =============================================================================
+# ExplaiNN2
+# =============================================================================
+
+class ExplaiNN2(nn.Module):
+    def __init__(self, num_cnns, input_length, num_classes, 
+                 filter_size = 19, num_fc=2, pool_size=7, pool_stride=7, 
+                 fc_filter1 = 20, fc_filter2 = 1, drop_out = 0.3, weight_path = None):
+        super(ExplaiNN2, self).__init__()
+        self._options = {
+            "num_cnns": num_cnns,
+            "input_length": input_length,
+            "num_classes": num_classes,
+            "filter_size": filter_size,
+            "num_fc": num_fc,
+            "pool_size": pool_size,
+            "pool_stride": pool_stride,
+            "weight_path": weight_path
+        }
+        self.linears = nn.Sequential(
+            # Convolution Layer
+            nn.Conv1d(in_channels=4, out_channels=1, kernel_size=filter_size, padding = 'same'),
+            nn.BatchNorm1d(1),
+            ExpActivation(),
+            nn.MaxPool1d(pool_size, pool_stride), # pool_size=7, pool_stride=7
+            nn.Flatten(),
+            # Linear Layer 1
+            nn.Linear(((input_length-pool_size)//pool_stride) + 1, fc_filter1),
+            nn.BatchNorm1d(fc_filter1),
+            ExpActivation(),
+            nn.Dropout(p=drop_out),
+            # Linear Layer 2
+            nn.Linear(fc_filter1, fc_filter2),
+            nn.BatchNorm1d(fc_filter2),
+            ExpActivation(),
+            nn.Flatten()
+        )
+        self.final = nn.Linear(num_cnns*fc_filter2, num_classes)
+
+        if weight_path:
+            self.load_state_dict(torch.load(weight_path))
+        
+    def forward(self, x):
+        encoder = []
+        for i in range(self._options['num_cnns']):
+            xnn = self.linears(x)
+            encoder.append(xnn)
+        encoder = torch.cat(encoder, dim=-1)
+        results = self.final(encoder)
+        return results
+
+
+class ExplaiNN3(nn.Module):
+    """
+    [B,4,608] -> replicate [B, 4 * n_cnn, 608] -> Conv1d(4 * n_cnn, n_cnn, kernel = 19)
+    -> [B, n_cnn, 590] -> ExpAct -> MaxPool (7,7) -> [B, n_cnn, 84] -> flat ->
+    [B, n_cnn * 84] -> Unsqueeze -> [B, n_cnn * 84, 1] -> Conv1d (n_cnn * 84, n_cnn * 100, kernel = 1) ->
+    [B, n_cnn * 100, 1] -> Conv1d (n_cnn * 100, n_cnn * 1, kernel = 1) -> [B, n_cnn, 1]
+    -> flat -> [B, n_cnn] -> Linear (n_cnn, num_classes) -> [B, num_classes]
+    """
+    def __init__(self, num_cnns, input_length, num_classes, 
+                 filter_size = 19, num_fc=2, pool_size=7, pool_stride=7, 
+                 drop_out = 0.3, weight_path = None):
+        super(ExplaiNN3, self).__init__()
+        self._options = {
+            "num_cnns": num_cnns,
+            "input_length": input_length,
+            "num_classes": num_classes,
+            "filter_size": filter_size,
+            "num_fc": num_fc,
+            "pool_size": pool_size,
+            "pool_stride": pool_stride,
+            "weight_path": weight_path
+        }
+        self.linears = nn.Sequential(
+            nn.Conv1d(in_channels=4 * num_cnns, out_channels=1 * num_cnns, kernel_size=filter_size,
+                        groups=num_cnns),
+            nn.BatchNorm1d(num_cnns),
+            ExpActivation(),
+            nn.MaxPool1d(pool_size, pool_stride),
+            nn.Flatten(),
+            Unsqueeze(),
+            nn.Conv1d(in_channels=int(((input_length - (filter_size-1)) - (pool_size-1)-1)/pool_stride + 1) * num_cnns,
+                        out_channels=100 * num_cnns, kernel_size=1,
+                        groups=num_cnns),
+            nn.BatchNorm1d(100 * num_cnns, 1e-05, 0.1, True),
+            nn.ReLU(),
+            nn.Dropout(drop_out),
+            nn.Conv1d(in_channels=100 * num_cnns,
+                        out_channels=1 * num_cnns, kernel_size=1,
+                        groups=num_cnns),
+            nn.BatchNorm1d(1 * num_cnns, 1e-05, 0.1, True),
+            nn.ReLU(),
+            nn.Flatten()
+            )
+        self.final = nn.Linear(num_cnns, num_classes)
+
+        if weight_path:
+            self.load_state_dict(torch.load(weight_path))
+        
+    def forward(self, x):
+        x = x.repeat(1, self._options["num_cnns"], 1)
+        outs = self.linears(x)
+        results = self.final(outs)
+        return results
