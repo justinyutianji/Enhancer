@@ -46,17 +46,168 @@ seed_list = []
 batch_list = []
 lr_list = []
 dropout_list = []
-mse_list = []
-rmse_list = []
-mae_list = []
-r2_list = []
-pearson_corr_list = []
-spearman_corr_list = []
 
-seeds = [44,234,90,500,293]
+mse_list_p = []
+rmse_list_p = []
+mae_list_p = []
+r2_list_p = []
+pearson_corr_list_p = []
+spearman_corr_list_p = []
+
+mse_list_r = []
+rmse_list_r = []
+mae_list_r = []
+r2_list_r = []
+pearson_corr_list_r = []
+spearman_corr_list_r = []
+
+best_pearson_epochs = []
+best_r2_epochs = []
+
+
+seeds = [random.randint(1, 1000) for _ in range(5)]
 # Split the dataset
 for seed in seeds: 
-    for batch in [24,48,96,168,288]:
+    for batch in [24,96,168]:
+        train, test = split_dataset(df, split_type='random', cutoff=0.8, seed=seed)
+
+        # Process datasets
+        train = EnhancerDataset(train, label_mode='both', scale_mode='none')
+        test = EnhancerDataset(test, label_mode='both', scale_mode='none')
+
+        # DataLoader setup
+        train_loader = DataLoader(dataset=train, batch_size=batch, shuffle=True)
+        test_loader = DataLoader(dataset=test, batch_size=batch, shuffle=True)
+
+        # Hyperparameter search
+        for dropout in [0.3]:
+            # Model setup
+            input_model = ConvNetDeep(num_classes=2, drop_out=dropout)
+            for learning_rate in [1e-5, 5e-5, 1e-4, 5e-4]:
+                formatted_lr = "{:.5f}".format(learning_rate)
+                os.makedirs(f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}', exist_ok=True)
+                print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")
+                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models'
+
+                _, _, model, train_losses_by_batch, test_losses_by_batch, results, best_pearson_epoch, best_r2_epoch, device  = train_model(
+                    input_model, train_loader, test_loader, num_epochs=200, batch_size=batch, learning_rate=learning_rate, 
+                    criteria='mse',optimizer_type = "adam", patience=15, seed = seed, save_model= True, dir_path=pathway)
+
+                # Saving all metrics for best r2 model and pearson model respectively
+                index = best_pearson_epoch - 1
+                mse_list_p.append(results['mse'][index])
+                rmse_list_p.append(results['rmse'][index])
+                mae_list_p.append(results['mae'][index])
+                r2_list_p.append(results['r2'][index])
+                pearson_corr_list_p.append(results['pearson_corr'][index])
+                spearman_corr_list_p.append(results['spearman_corr'][index])
+                
+                index = best_r2_epoch - 1
+                mse_list_r.append(results['mse'][index])
+                rmse_list_r.append(results['rmse'][index])
+                mae_list_r.append(results['mae'][index])
+                r2_list_r.append(results['r2'][index])
+                pearson_corr_list_r.append(results['pearson_corr'][index])
+                spearman_corr_list_r.append(results['spearman_corr'][index])
+
+                seed_list.append(seed)
+                batch_list.append(batch)
+                lr_list.append(formatted_lr)
+                dropout_list.append(dropout)
+                cnns.append(cnn)
+                best_pearson_epochs.append(best_pearson_epoch)
+                best_r2_epochs.append(best_r2_epoch)
+
+                #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/best_pearson'
+                model_path = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models/model_epoch_{best_pearson_epoch}.pth'
+                mse, rmse, mae, r2, pearson_corr, spearman_corr = regression_model_plot(
+                    input_model, test_loader, train_losses_by_batch, test_losses_by_batch, 
+                    device, results, label_mode = "both",
+                    save_plot = True, dir_path = pathway, model_path = model_path)
+                
+                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/best_r2'
+                model_path = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models/model_epoch_{best_r2_epoch}.pth'
+                mse, rmse, mae, r2, pearson_corr, spearman_corr = regression_model_plot(
+                    input_model, test_loader, train_losses_by_batch, test_losses_by_batch, 
+                    device, results, label_mode = "both",
+                    save_plot = True, dir_path = pathway, model_path = model_path)
+                print("Deleting Models")
+                if os.path.exists(f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models'):
+                    # Remove the directory and all its contents
+                    shutil.rmtree(f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models')
+                    print("Finish Deleting Models")
+
+                print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
+                print(f"R^2: {r2:.4f}, Pearson Correlation: {pearson_corr:.4f}, Spearman Correlation: {spearman_corr:.4f}")
+
+                seed_list.append(seed)
+                batch_list.append(batch)
+                lr_list.append(formatted_lr)
+                dropout_list.append(dropout)
+
+# Save the R_square results to a CSV file
+filename = '/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_Metrics_both.csv'
+
+results_df = pd.DataFrame({
+    "batch": batch_list,
+    "lr": lr_list,
+    "drop_out": dropout_list,
+    "seed": seed_list,
+    "mse_p":mse_list_p,
+    "rmse_p":rmse_list_p,
+    "mae_p":mae_list_p,
+    "r2_p":r2_list_p,
+    "pearson_corr_p":pearson_corr_list_p,
+    "spearman_corr_r":spearman_corr_list_p,
+    "mse_r":mse_list_r,
+    "rmse_r":rmse_list_r,
+    "mae_r":mae_list_r,
+    "r2_r":r2_list_r,
+    "pearson_corr_r":pearson_corr_list_r,
+    "spearman_corr_r":spearman_corr_list_r,
+    "best_pearson_epoch": best_pearson_epochs,
+    "best_r2_epoch": best_r2_epochs
+})
+results_df.to_csv(filename, index=False)
+print(f"R_square values saved to {filename}")
+
+
+
+
+
+# Load the dataset
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/input_data.csv')
+
+#seeds = [random.randint(0, 2**32 - 1) for _ in range(3)]
+# Initialize the R_square list
+seed_list = []
+batch_list = []
+lr_list = []
+dropout_list = []
+
+mse_list_p = []
+rmse_list_p = []
+mae_list_p = []
+r2_list_p = []
+pearson_corr_list_p = []
+spearman_corr_list_p = []
+
+mse_list_r = []
+rmse_list_r = []
+mae_list_r = []
+r2_list_r = []
+pearson_corr_list_r = []
+spearman_corr_list_r = []
+
+best_pearson_epochs = []
+best_r2_epochs = []
+
+
+seeds = [random.randint(1, 1000) for _ in range(5)]
+# Split the dataset
+for seed in seeds: 
+    for batch in [24,96,168]:
         train, test = split_dataset(df, split_type='random', cutoff=0.8, seed=seed)
 
         # Process datasets
@@ -68,22 +219,64 @@ for seed in seeds:
         test_loader = DataLoader(dataset=test, batch_size=batch, shuffle=True)
 
         # Hyperparameter search
-        for dropout in [0.1, 0.3]:
+        for dropout in [0.3]:
             # Model setup
             input_model = ConvNetDeep(num_classes=1, drop_out=dropout)
-            for learning_rate in [6e-5, 1e-4, 4e-4]:
+            for learning_rate in [1e-5, 5e-5, 1e-4, 5e-4]:
                 formatted_lr = "{:.5f}".format(learning_rate)
+                os.makedirs(f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}', exist_ok=True)
                 print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")
-                _, _, model, train_losses_by_batch, test_losses_by_batch, results, device  = train_model(
+                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models'
+
+                _, _, model, train_losses_by_batch, test_losses_by_batch, results, best_pearson_epoch, best_r2_epoch, device  = train_model(
                     input_model, train_loader, test_loader, num_epochs=200, batch_size=batch, learning_rate=learning_rate, 
-                    criteria='mse',optimizer_type = "adam", patience=15, seed = seed, save_model= False, dir_path=None)
+                    criteria='mse',optimizer_type = "adam", patience=15, seed = seed, save_model= True, dir_path=pathway)
+
+                # Saving all metrics for best r2 model and pearson model respectively
+                index = best_pearson_epoch - 1
+                mse_list_p.append(results['mse'][index])
+                rmse_list_p.append(results['rmse'][index])
+                mae_list_p.append(results['mae'][index])
+                r2_list_p.append(results['r2'][index])
+                pearson_corr_list_p.append(results['pearson_corr'][index])
+                spearman_corr_list_p.append(results['spearman_corr'][index])
+                
+                index = best_r2_epoch - 1
+                mse_list_r.append(results['mse'][index])
+                rmse_list_r.append(results['rmse'][index])
+                mae_list_r.append(results['mae'][index])
+                r2_list_r.append(results['r2'][index])
+                pearson_corr_list_r.append(results['pearson_corr'][index])
+                spearman_corr_list_r.append(results['spearman_corr'][index])
+
+                seed_list.append(seed)
+                batch_list.append(batch)
+                lr_list.append(formatted_lr)
+                dropout_list.append(dropout)
+                cnns.append(cnn)
+                best_pearson_epochs.append(best_pearson_epoch)
+                best_r2_epochs.append(best_r2_epoch)
 
                 #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}'
+                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/best_pearson'
+                model_path = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models/model_epoch_{best_pearson_epoch}.pth'
                 mse, rmse, mae, r2, pearson_corr, spearman_corr = regression_model_plot(
-                    model, test_loader, train_losses_by_batch, test_losses_by_batch, device, results, 
-                    save_plot = True, dir_path = pathway
-                    )
+                    input_model, test_loader, train_losses_by_batch, test_losses_by_batch, 
+                    device, results, label_mode = "G+",
+                    save_plot = True, dir_path = pathway, model_path = model_path)
+                
+                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/best_r2'
+                model_path = f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models/model_epoch_{best_r2_epoch}.pth'
+                mse, rmse, mae, r2, pearson_corr, spearman_corr = regression_model_plot(
+                    input_model, test_loader, train_losses_by_batch, test_losses_by_batch, 
+                    device, results, label_mode = "G+",
+                    save_plot = True, dir_path = pathway, model_path = model_path)
+                print("Deleting Models")
+                if os.path.exists(f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models'):
+                    # Remove the directory and all its contents
+                    shutil.rmtree(f'/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_G+_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}/models')
+                    print("Finish Deleting Models")
+
                 print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
                 print(f"R^2: {r2:.4f}, Pearson Correlation: {pearson_corr:.4f}, Spearman Correlation: {spearman_corr:.4f}")
 
@@ -91,109 +284,29 @@ for seed in seeds:
                 batch_list.append(batch)
                 lr_list.append(formatted_lr)
                 dropout_list.append(dropout)
-                mse_list.append(mse)
-                rmse_list.append(rmse)
-                mae_list.append(mae)
-                r2_list.append(r2)
-                pearson_corr_list.append(pearson_corr)
-                spearman_corr_list.append(spearman_corr)
 
 # Save the R_square results to a CSV file
-filename = '/pmglocal/ty2514/Enhancer/Enhancer/results/ConvNetDeep_R_Square.csv'
+filename = '/pmglocal/ty2514/Enhancer/Enhancer/results_convnet/ConvNetDeep_Metrics_G+.csv'
 
 results_df = pd.DataFrame({
     "batch": batch_list,
     "lr": lr_list,
     "drop_out": dropout_list,
     "seed": seed_list,
-    "mse":mse_list,
-    "rmse":rmse_list,
-    "mae":mae_list,
-    "r2":r2_list,
-    "pearson_corr":pearson_corr_list,
-    "spearman_corr":spearman_corr_list
-})
-results_df.to_csv(filename, index=False)
-print(f"R_square values saved to {filename}")
-
-
-
-
-
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/input_data.csv')
-
-#seeds = [random.randint(0, 2**32 - 1) for _ in range(3)]
-# Initialize the R_square list
-seed_list = []
-batch_list = []
-lr_list = []
-dropout_list = []
-mse_list = []
-rmse_list = []
-mae_list = []
-r2_list = []
-pearson_corr_list = []
-spearman_corr_list = []
-
-seeds = [44,234,90,500,293]
-# Split the dataset
-for seed in seeds: 
-    for batch in [24,48,96,168,288]:
-        train, test = split_dataset(df, split_type='random', cutoff=0.8, seed=seed)
-
-        # Process datasets
-        train = EnhancerDataset(train, label_mode='G+', scale_mode='-1-1')
-        test = EnhancerDataset(test, label_mode='G+', scale_mode='-1-1')
-
-        # DataLoader setup
-        train_loader = DataLoader(dataset=train, batch_size=batch, shuffle=True)
-        test_loader = DataLoader(dataset=test, batch_size=batch, shuffle=True)
-
-        # Hyperparameter search
-        for dropout in [0.1, 0.3]:
-            # Model setup
-            input_model = ConvNetDeep(num_classes=1, drop_out=dropout)
-            for learning_rate in [6e-5, 1e-4, 4e-4]:
-                formatted_lr = "{:.5f}".format(learning_rate)
-                print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")
-                _, _, model, train_losses_by_batch, test_losses_by_batch, results, device  = train_model(
-                    input_model, train_loader, test_loader, num_epochs=200, batch_size=batch, learning_rate=learning_rate, 
-                    criteria='mse',optimizer_type = "adam", patience=15, seed = seed, save_model= False, dir_path=None)
-
-                #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-                pathway = f'/pmglocal/ty2514/Enhancer/Enhancer/results/ConvNetDeep_dp{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}_scale_1_1'
-                mse, rmse, mae, r2, pearson_corr, spearman_corr = regression_model_plot(
-                    model, test_loader, train_losses_by_batch, test_losses_by_batch, device, results, 
-                    save_plot = True, dir_path = pathway
-                    )
-                print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
-                print(f"R^2: {r2:.4f}, Pearson Correlation: {pearson_corr:.4f}, Spearman Correlation: {spearman_corr:.4f}")
-
-                seed_list.append(seed)
-                batch_list.append(batch)
-                lr_list.append(formatted_lr)
-                dropout_list.append(dropout)
-                mse_list.append(mse)
-                rmse_list.append(rmse)
-                mae_list.append(mae)
-                r2_list.append(r2)
-                pearson_corr_list.append(pearson_corr)
-                spearman_corr_list.append(spearman_corr)
-
-# Save the R_square results to a CSV file
-filename = '/pmglocal/ty2514/Enhancer/Enhancer/results/ConvNetDeep_R_Square_scale_1_1.csv'
-
-results_df = pd.DataFrame({
-    "batch": batch_list,
-    "lr": lr_list,
-    "drop_out": dropout_list,
-    "seed": seed_list,
-    "mse":mse_list,
-    "rmse":rmse_list,
-    "mae":mae_list,
-    "r2":r2_list,
-    "pearson_corr":pearson_corr_list,
-    "spearman_corr":spearman_corr_list
+    "mse_p":mse_list_p,
+    "rmse_p":rmse_list_p,
+    "mae_p":mae_list_p,
+    "r2_p":r2_list_p,
+    "pearson_corr_p":pearson_corr_list_p,
+    "spearman_corr_r":spearman_corr_list_p,
+    "mse_r":mse_list_r,
+    "rmse_r":rmse_list_r,
+    "mae_r":mae_list_r,
+    "r2_r":r2_list_r,
+    "pearson_corr_r":pearson_corr_list_r,
+    "spearman_corr_r":spearman_corr_list_r,
+    "best_pearson_epoch": best_pearson_epochs,
+    "best_r2_epoch": best_r2_epochs
 })
 results_df.to_csv(filename, index=False)
 print(f"R_square values saved to {filename}")
