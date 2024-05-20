@@ -147,7 +147,7 @@ for seed in seeds:
                 print(f"R^2: {r2:.4f}, Pearson Correlation: {pearson_corr:.4f}, Spearman Correlation: {spearman_corr:.4f}")
 
     # Save the R_square results to a CSV file
-    filename = '/pmglocal/ty2514/Enhancer/Enhancer/results/ExplaiNN3_both_Metrics_seed{seed}.csv'
+    filename = f'/pmglocal/ty2514/Enhancer/Enhancer/results/ExplaiNN3_both_Metrics_seed{seed}.csv'
 
     results_df = pd.DataFrame({
         "num_cnns": cnns,
@@ -160,7 +160,7 @@ for seed in seeds:
         "mae_p":mae_list_p,
         "r2_p":r2_list_p,
         "pearson_corr_p":pearson_corr_list_p,
-        "spearman_corr_r":spearman_corr_list_p,
+        "spearman_corr_p":spearman_corr_list_p,
         "mse_r":mse_list_r,
         "rmse_r":rmse_list_r,
         "mae_r":mae_list_r,

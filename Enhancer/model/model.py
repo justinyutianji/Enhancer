@@ -444,3 +444,60 @@ class ExplaiNN3(nn.Module):
         outs = self.linears(x)
         results = self.final(outs)
         return results
+    
+class DeepSTARR(nn.Module):
+    """
+    PyTorch implementation of DeepSTARR (PMID: 35551305)
+    [B,4,608] ==(Block1)==> [B, 256, 608] => [B, 256, 304]
+            ==(Block2)==> [B, 60, 304] => [B, 60, 152]
+            ==(Block3)==> [B, 60, 152] => [B, 60, 76]
+            ==(Block4)==> [B, 120, 76] => [B, 120, 38]
+            ==(Flatten)==> [B, 4560]
+            ==(Linear1)==> [B, 256]
+            ==(Linear1)==> [B, 256]
+            ==(Linear1)==> [B, num_classes]
+    """
+    def __init__(self, weight_path=None, num_classes = 2):
+        super(DeepSTARR, self).__init__()
+        self.convol = nn.Sequential(
+            nn.Conv1d(in_channels=4, out_channels=256, kernel_size=7,
+                      padding=int((7 - 1) / 2)),  # same padding
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Conv1d(in_channels=256, out_channels=60, kernel_size=3,
+                      padding=int((3 - 1) / 2)),  # same padding
+            nn.BatchNorm1d(60),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Conv1d(in_channels=60, out_channels=60, kernel_size=5,
+                      padding=int((5 - 1) / 2)),  # same padding
+            nn.BatchNorm1d(60),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Conv1d(in_channels=60, out_channels=120, kernel_size=3,
+                      padding=int((3 - 1) / 2)),  # same padding
+            nn.BatchNorm1d(120),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Flatten()
+        )
+
+        self.linear = nn.Sequential(
+            nn.Linear(4560, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(256, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(256, num_classes)
+        )
+
+        if weight_path:
+            self.load_state_dict(torch.load(weight_path))
+
+    def forward(self, x):
+        o = self.linear(self.convol(x))
+        return o
