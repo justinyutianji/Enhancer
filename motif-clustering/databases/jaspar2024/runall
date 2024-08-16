@@ -1,0 +1,121 @@
+
+# Used JASPAR search feature on  website to select TF in homo sapiens; likely redundant
+# Added to 'cart' and batch downloaded
+
+cat JASPAR2024_CORE_vertebrates_non-redundant_pfms_meme.txt \
+| awk '
+$1=="MOTIF" {
+    third_word = $3;
+    if (third_word != "" && third_word != toupper(third_word)) {
+        exclude = 1;
+    } else {
+        exclude = 0;
+        print $1, $2;
+    }
+    next;
+}
+exclude { 
+    if ($1 == "MOTIF") {
+        exclude = 0;
+        print $1, $2;
+    }
+    next;
+}
+{
+    if (!exclude) {
+        print;
+    }
+}' > JASPAR2024_CORE_vertebrates_human_non-redundant_pfms_meme.txt
+
+
+
+
+cat JASPAR2024_CORE_vertebrates_non-redundant_pfms_meme.txt | awk '
+BEGIN {
+    include_count = 0;
+    exclude_count = 0;
+}
+$1 == "MOTIF" {
+    third_word = $3;
+    if (third_word != "" && third_word != toupper(third_word)) {
+        include = 1;
+        include_count++;
+        print $1, $2;
+    } else {
+        include = 0;
+        exclude_count++;
+    }
+    next;
+}
+include {
+    if ($1 == "MOTIF") {
+        third_word = $3;
+        if (third_word != "" && third_word != toupper(third_word)) {
+            include = 1;
+            include_count++;
+            print $1, $2;
+        } else {
+            include = 0;
+            exclude_count++;
+        }
+    } else {
+        print;
+    }
+    next;
+}
+END {
+    print "Number of inclusions: " include_count > "/dev/stderr";
+    print "Number of exclusions: " exclude_count > "/dev/stderr";
+}' > JASPAR2024_CORE_vertebrates_mice_non-redundant_pfms_meme.meme
+
+
+cat JASPAR2024_CORE_vertebrates_non-redundant_pfms_meme.txt | awk '
+BEGIN {
+    include_count = 0;
+    exclude_count = 0;
+    include = 0;
+}
+$1 == "MOTIF" {
+    third_word = $3;
+    if (third_word != "" && third_word != toupper(third_word)) {
+        include = 1;
+        include_count++;
+        print $1, $2;
+    } else {
+        include = 0;
+        exclude_count++;
+    }
+    next;
+}
+include && $1 == "URL" {
+    print;  # Print the URL line
+    print "";  # Print an empty line
+    if (tolower($0) ~ /mus musculus/) {
+        include = 1;
+    } else {
+        include = 0;
+        exclude_count++;
+    }
+    next;
+}
+include {
+    if ($1 == "MOTIF") {
+        third_word = $3;
+        if (third_word != "" && third_word != toupper(third_word)) {
+            include = 1;
+            include_count++;
+            print $1, $2;
+        } else {
+            include = 0;
+            exclude_count++;
+        }
+    } else {
+        print;
+    }
+    next;
+}
+END {
+    print "Number of inclusions: " include_count > "/dev/stderr";
+    print "Number of exclusions: " exclude_count > "/dev/stderr";
+}' > JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_meme.meme
+

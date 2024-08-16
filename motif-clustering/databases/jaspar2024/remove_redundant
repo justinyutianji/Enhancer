@@ -1,0 +1,46 @@
+
+# Used JASPAR search feature on  website to select TF in mus musculus; likely redundant
+# Added to 'cart' and batch downloaded
+# In this script, we would remove redundant pwms (i.e. MA0078.1, MA0078.2, MA0078.3 all represent Sox17. Thus only keep 1)
+
+cat JASPAR2024_CORE_vertebrates_mus_musculus_redundant_pfms_meme.txt \
+| awk '
+BEGIN {
+    # Initialize an empty array to store substrings
+    split("", substrings);
+}
+$1=="MOTIF" {
+    third_word = $3;
+    if (third_word != "") {
+        # Extract substring before the '.'
+        split(third_word, parts, ".");
+        substr_before_dot = parts[1];
+
+        # Check if the substring exists in the array
+        if (substr_before_dot in substrings) {
+            exclude = 1;
+        } else {
+            exclude = 0;
+            substrings[substr_before_dot] = 1;  # Add the substring to the array
+            print $1, $2;
+        }
+    } else {
+        exclude = 0;
+        print $1, $2;
+    }
+    next;
+}
+exclude { 
+    if ($1 == "MOTIF") {
+        exclude = 0;
+        print $1, $2;
+    }
+    next;
+}
+{
+    if (!exclude) {
+        print;
+    }
+}' > JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_meme.meme
+
+
