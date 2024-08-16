@@ -1,0 +1,45 @@
+#!/bin/bash
+#SBATCH --time=1:00:00
+#SBATCH --mem=8G
+#SBATCH --cpus-per-task=1
+#SBATCH --account pmg
+
+base_dir="results"
+
+rm -rf ${base_dir}/logs && mkdir -p ${base_dir}/logs
+rm -rf ${base_dir}/tomtom && mkdir -p ${base_dir}/tomtom
+
+meme2meme \
+	databases/jaspar2024/*.meme \
+	databases/cisbp_v2.0/*.meme \
+	databases/Grand2021/*.meme \
+> ${base_dir}/all.dbs.meme
+
+rm -rf ${base_dir}/logs && mkdir -p ${base_dir}/logs
+rm -rf ${base_dir}/tomtom && mkdir -p ${base_dir}/tomtom
+
+cat <<__SCRIPT__ > ${base_dir}/slurm.tomtom
+#!/bin/bash
+#SBATCH --time=1:00:00
+#SBATCH --output=${base_dir}/logs/%J.out
+#SBATCH --mem=8G
+#SBATCH --cpus-per-task=1
+#SBATCH --partition=queue0
+#SBATCH --account pmg
+
+
+tomtom \
+	-bfile /net/seq/data/projects/motifs/hg19.K36.mappable_only.5-order.markov \
+	-dist kullback \
+	-motif-pseudo 0.1 \
+	-text \
+	-min-overlap 1 \
+	${base_dir}/all.dbs.meme ${base_dir}/all.dbs.meme \
+> ${base_dir}/tomtom/tomtom.all.txt
+
+__SCRIPT__
+
+JOB0=$(sbatch --export=ALL --parsable \
+	--job-name=tomtom.chunk \
+	${base_dir}/slurm.tomtom)
+echo $JOB0

@@ -1,0 +1,315 @@
+,cluster,source_id,tf_name,family_name,motif_type,PMID,cluster_annotation
+0,AC0001,MA0105.1,NFKB1,Rel homology region (RHR) factors,Unknown,8449662,Rel homology region (RHR) factors
+1,AC0002,filter20,filter20,Unknown,Unknown,Unknown,Unknown
+2,AC0003,MA0154.1,EBF1,Rel homology region (RHR) factors,Unknown,17916232,Rel homology region (RHR) factors
+3,AC0003,MA1604.1,Ebf2,Rel homology region (RHR) factors,Unknown,23499423,Rel homology region (RHR) factors
+4,AC0003,MA2122.1,Ebf4,Rel homology region (RHR) factors,Unknown,35939714,Rel homology region (RHR) factors
+5,AC0004,MA1999.1,Prdm5,C2H2 zinc finger factors,Unknown,22589746,C2H2 zinc finger factors
+6,AC0005,filter33,filter33,Unknown,Unknown,Unknown,Unknown
+7,AC0006,filter11,filter11,Unknown,Unknown,Unknown,Unknown
+8,AC0006,filter12,filter12,Unknown,Unknown,Unknown,Unknown
+9,AC0006,filter13,filter13,Unknown,Unknown,Unknown,Unknown
+10,AC0006,filter14,filter14,Unknown,Unknown,Unknown,Unknown
+11,AC0006,filter15,filter15,Unknown,Unknown,Unknown,Unknown
+12,AC0006,filter17,filter17,Unknown,Unknown,Unknown,Unknown
+13,AC0006,filter18,filter18,Unknown,Unknown,Unknown,Unknown
+14,AC0006,filter19,filter19,Unknown,Unknown,Unknown,Unknown
+15,AC0006,filter22,filter22,Unknown,Unknown,Unknown,Unknown
+16,AC0006,filter23,filter23,Unknown,Unknown,Unknown,Unknown
+17,AC0006,filter24,filter24,Unknown,Unknown,Unknown,Unknown
+18,AC0006,filter25,filter25,Unknown,Unknown,Unknown,Unknown
+19,AC0006,filter26,filter26,Unknown,Unknown,Unknown,Unknown
+20,AC0006,filter3,filter3,Unknown,Unknown,Unknown,Unknown
+21,AC0006,filter31,filter31,Unknown,Unknown,Unknown,Unknown
+22,AC0006,filter34,filter34,Unknown,Unknown,Unknown,Unknown
+23,AC0006,filter36,filter36,Unknown,Unknown,Unknown,Unknown
+24,AC0006,filter37,filter37,Unknown,Unknown,Unknown,Unknown
+25,AC0006,filter38,filter38,Unknown,Unknown,Unknown,Unknown
+26,AC0006,filter4,filter4,Unknown,Unknown,Unknown,Unknown
+27,AC0006,filter41,filter41,Unknown,Unknown,Unknown,Unknown
+28,AC0006,filter42,filter42,Unknown,Unknown,Unknown,Unknown
+29,AC0006,filter43,filter43,Unknown,Unknown,Unknown,Unknown
+30,AC0006,filter44,filter44,Unknown,Unknown,Unknown,Unknown
+31,AC0006,filter45,filter45,Unknown,Unknown,Unknown,Unknown
+32,AC0006,filter47,filter47,Unknown,Unknown,Unknown,Unknown
+33,AC0006,filter48,filter48,Unknown,Unknown,Unknown,Unknown
+34,AC0006,filter52,filter52,Unknown,Unknown,Unknown,Unknown
+35,AC0006,filter54,filter54,Unknown,Unknown,Unknown,Unknown
+36,AC0006,filter56,filter56,Unknown,Unknown,Unknown,Unknown
+37,AC0006,filter58,filter58,Unknown,Unknown,Unknown,Unknown
+38,AC0006,filter59,filter59,Unknown,Unknown,Unknown,Unknown
+39,AC0006,filter61,filter61,Unknown,Unknown,Unknown,Unknown
+40,AC0006,filter62,filter62,Unknown,Unknown,Unknown,Unknown
+41,AC0006,filter64,filter64,Unknown,Unknown,Unknown,Unknown
+42,AC0006,filter66,filter66,Unknown,Unknown,Unknown,Unknown
+43,AC0006,filter71,filter71,Unknown,Unknown,Unknown,Unknown
+44,AC0006,filter75,filter75,Unknown,Unknown,Unknown,Unknown
+45,AC0006,filter76,filter76,Unknown,Unknown,Unknown,Unknown
+46,AC0006,filter8,filter8,Unknown,Unknown,Unknown,Unknown
+47,AC0006,filter80,filter80,Unknown,Unknown,Unknown,Unknown
+48,AC0006,filter81,filter81,Unknown,Unknown,Unknown,Unknown
+49,AC0006,filter83,filter83,Unknown,Unknown,Unknown,Unknown
+50,AC0006,filter84,filter84,Unknown,Unknown,Unknown,Unknown
+51,AC0006,filter86,filter86,Unknown,Unknown,Unknown,Unknown
+52,AC0006,filter88,filter88,Unknown,Unknown,Unknown,Unknown
+53,AC0006,filter89,filter89,Unknown,Unknown,Unknown,Unknown
+54,AC0006,filter9,filter9,Unknown,Unknown,Unknown,Unknown
+55,AC0007,filter69,filter69,Unknown,Unknown,Unknown,Unknown
+56,AC0008,filter5,filter5,Unknown,Unknown,Unknown,Unknown
+57,AC0009,MA0027.1,En1,Homeo domain factors,Unknown,8096059,Homeo domain factors
+58,AC0010,MA0039.1,Klf4,C2H2 zinc finger factors,Unknown,9443972,C2H2 zinc finger factors
+59,AC0011,MA0047.2,Foxa2,Fork head/winged helix factors,Unknown,19553195,Fork head/winged helix factors
+60,AC0011,MA0157.1,FOXO3,Fork head/winged helix factors,Unknown,17916232,Fork head/winged helix factors
+61,AC0011,MA0480.1,Foxo1,Fork head/winged helix factors,Unknown,10880363,Fork head/winged helix factors
+62,AC0011,MA0614.1,Foxj2,Fork head/winged helix factors,Unknown,24025729,Fork head/winged helix factors
+63,AC0011,MA0851.1,Foxj3,Fork head/winged helix factors,Unknown,23332764,Fork head/winged helix factors
+64,AC0011,MA0852.1,Foxk1,Fork head/winged helix factors,Unknown,16624804,Fork head/winged helix factors
+65,AC0011,MA1606.1,Foxf1,Fork head/winged helix factors,Unknown,25215497,Fork head/winged helix factors
+66,AC0011,MA1607.1,Foxl2,Fork head/winged helix factors,Unknown,17192407,Fork head/winged helix factors
+67,AC0012,filter74,filter74,Unknown,Unknown,Unknown,Unknown
+68,AC0012,filter78,filter78,Unknown,Unknown,Unknown,Unknown
+69,AC0013,MA0629.1,Rhox11,Homeo domain factors,Unknown,18585359,Homeo domain factors
+70,AC0014,filter55,filter55,Unknown,Unknown,Unknown,Unknown
+71,AC0015,MA0068.1,Pax4,Paired box factors,Unknown,10567552,Paired box factors/Unknown
+72,AC0015,filter35,filter35,Unknown,Unknown,Unknown,Paired box factors/Unknown
+73,AC0015,filter70,filter70,Unknown,Unknown,Unknown,Paired box factors/Unknown
+74,AC0016,filter6,filter6,Unknown,Unknown,Unknown,Unknown
+75,AC0017,filter65,filter65,Unknown,Unknown,Unknown,Unknown
+76,AC0018,MA0014.1,Pax5,Paired box factors,Unknown,8406007,Paired box factors
+77,AC0019,MA0615.1,Gmeb1,SAND domain factors,Unknown,19443739,SAND domain factors
+78,AC0020,filter50,filter50,Unknown,Unknown,Unknown,Unknown
+79,AC0021,MA0145.1,Tfcp2l1,Grainyhead domain factors,Unknown,18555785,Grainyhead domain factors
+80,AC0022,filter82,filter82,Unknown,Unknown,Unknown,Unknown
+81,AC0023,filter67,filter67,Unknown,Unknown,Unknown,Unknown
+82,AC0024,filter0,filter0,Unknown,Unknown,Unknown,Unknown
+83,AC0024,filter53,filter53,Unknown,Unknown,Unknown,Unknown
+84,AC0025,filter16,filter16,Unknown,Unknown,Unknown,Unknown
+85,AC0026,filter85,filter85,Unknown,Unknown,Unknown,Unknown
+86,AC0027,filter27,filter27,Unknown,Unknown,Unknown,Unknown
+87,AC0028,MA0122.1,Nkx3-2,Homeo domain factors,Unknown,12746429,Homeo domain factors
+88,AC0028,MA0124.2,Nkx3-1,Homeo domain factors,Unknown,18585360,Homeo domain factors
+89,AC0028,MA1994.1,Nkx2-1,Homeo domain factors,Unknown,26556242,Homeo domain factors
+90,AC0029,MA0611.1,Dux,Homeo domain factors,Unknown,24278031,Homeo domain factors
+91,AC0029,MA2339.1,Nanog,Homeo domain factors,Unknown,33603233,Homeo domain factors
+92,AC0030,MA0151.1,Arid3a,ARID,Unknown,8543152,ARID/Homeo domain factors
+93,AC0030,MA0650.3,Hoxa13,Homeo domain factors,Unknown,17200107,ARID/Homeo domain factors
+94,AC0030,MA0909.3,Hoxd13,Homeo domain factors,Unknown,18585359,ARID/Homeo domain factors
+95,AC0030,MA0913.1,Hoxd9,Homeo domain factors,Unknown,10523646,ARID/Homeo domain factors
+96,AC0031,MA0075.1,Prrx2,Homeo domain factors,Unknown,7901837,Homeo domain factors
+97,AC0031,MA0125.1,Nobox,Homeo domain factors,Unknown,16997917,Homeo domain factors
+98,AC0031,MA0132.1,Pdx1,Homeo domain factors,Unknown,14704343,Homeo domain factors
+99,AC0031,MA0158.1,HOXA5,Homeo domain factors,Unknown,17916232,Homeo domain factors
+100,AC0031,MA0704.1,Lhx4,Homeo domain factors,Unknown,18585360,Homeo domain factors
+101,AC0031,MA0705.1,Lhx8,Homeo domain factors,Unknown,18585360,Homeo domain factors
+102,AC0031,MA0709.1,Msx3,Homeo domain factors,Unknown,18585360,Homeo domain factors
+103,AC0031,MA0720.1,Shox2,Homeo domain factors,Unknown,18585360,Homeo domain factors
+104,AC0031,MA0853.1,Alx4,Homeo domain factors,Unknown,10542273,Homeo domain factors
+105,AC0031,MA0854.1,Alx1,Homeo domain factors,Unknown,23332764,Homeo domain factors
+106,AC0031,MA0874.1,Arx,Homeo domain factors,Unknown,23332764,Homeo domain factors
+107,AC0031,MA0877.1,Barhl1,Homeo domain factors,Unknown,18585359,Homeo domain factors
+108,AC0031,MA0879.1,Dlx1,Homeo domain factors,Unknown,18585359,Homeo domain factors
+109,AC0031,MA0880.1,Dlx3,Homeo domain factors,Unknown,23332764,Homeo domain factors
+110,AC0031,MA0881.1,Dlx4,Homeo domain factors,Unknown,23332764,Homeo domain factors
+111,AC0031,MA0885.1,Dlx2,Homeo domain factors,Unknown,18585359,Homeo domain factors
+112,AC0031,MA0904.1,Hoxb5,Homeo domain factors,Unknown,23332764,Homeo domain factors
+113,AC0031,MA0912.1,Hoxd3,Homeo domain factors,Unknown,23332764,Homeo domain factors
+114,AC0031,MA1476.2,Dlx5,Homeo domain factors,Unknown,18585359,Homeo domain factors
+115,AC0031,MA1518.2,Lhx1,Homeo domain factors,Unknown,18585359,Homeo domain factors
+116,AC0031,MA1608.1,Isl1,Homeo domain factors,Unknown,18585359,Homeo domain factors
+117,AC0032,MA0063.1,Nkx2-5,Homeo domain factors,Unknown,7797561,Homeo domain factors/ARID/Paired box factors
+118,AC0032,MA0135.1,Lhx3,Homeo domain factors,Unknown,11602361,Homeo domain factors/ARID/Paired box factors
+119,AC0032,MA0601.1,Arid3b,ARID,Unknown,8543152,Homeo domain factors/ARID/Paired box factors
+120,AC0032,MA0680.2,Pax7,Paired box factors,Unknown,10567552,Homeo domain factors/ARID/Paired box factors
+121,AC0032,MA0681.1,Phox2b,Homeo domain factors,Unknown,22323723,Homeo domain factors/ARID/Paired box factors
+122,AC0032,MA0896.1,Hmx1,Homeo domain factors,Unknown,23332764,Homeo domain factors/ARID/Paired box factors
+123,AC0032,MA0897.1,Hmx2,Homeo domain factors,Unknown,23332764,Homeo domain factors/ARID/Paired box factors
+124,AC0032,MA0898.1,Hmx3,Homeo domain factors,Unknown,23332764,Homeo domain factors/ARID/Paired box factors
+125,AC0032,MA0910.1,Hoxd8,Homeo domain factors,Unknown,23332764,Homeo domain factors/ARID/Paired box factors
+126,AC0033,MA0078.1,Sox17,High-mobility group (HMG) domain factors,Unknown,8636240,High-mobility group (HMG) domain factors
+127,AC0033,MA0442.1,SOX10,High-mobility group (HMG) domain factors,Unknown,17916232,High-mobility group (HMG) domain factors
+128,AC0033,MA0514.1,Sox3,High-mobility group (HMG) domain factors,Unknown,8625802,High-mobility group (HMG) domain factors
+129,AC0033,MA0515.1,Sox6,High-mobility group (HMG) domain factors,Unknown,21985497,High-mobility group (HMG) domain factors
+130,AC0033,MA2095.1,Sox7,High-mobility group (HMG) domain factors,Unknown,15220343,High-mobility group (HMG) domain factors
+131,AC0034,MA0087.1,Sox5,High-mobility group (HMG) domain factors,Unknown,1396566,High-mobility group (HMG) domain factors
+132,AC0034,MA0869.1,Sox11,High-mobility group (HMG) domain factors,Unknown,12920151,High-mobility group (HMG) domain factors
+133,AC0034,MA0870.1,Sox1,High-mobility group (HMG) domain factors,Unknown,12920151,High-mobility group (HMG) domain factors
+134,AC0035,MA1603.1,Dmrt1,DM-type intertwined zinc finger factors,Unknown,26005864,DM-type intertwined zinc finger factors
+135,AC0036,MA0050.3,Irf1,Tryptophan cluster factors,Unknown,21803131,Tryptophan cluster factors/STAT domain factors
+136,AC0036,MA1623.1,Stat2,STAT domain factors,Unknown,9242679,Tryptophan cluster factors/STAT domain factors
+137,AC0037,filter63,filter63,Unknown,Unknown,Unknown,Unknown
+138,AC0038,filter40,filter40,Unknown,Unknown,Unknown,Unknown
+139,AC0039,MA0142.1,Pou5f1::Sox2,Homeo domain factors/High-mobility group (HMG) domain factors,Unknown,18555785,Homeo domain factors/High-mobility group (HMG) domain factors/High-mobility group (HMG) domain factors/Unknown
+140,AC0039,MA0143.1,Sox2,High-mobility group (HMG) domain factors,Unknown,18555785,Homeo domain factors/High-mobility group (HMG) domain factors/High-mobility group (HMG) domain factors/Unknown
+141,AC0039,filter46,filter46,Unknown,Unknown,Unknown,Homeo domain factors/High-mobility group (HMG) domain factors/High-mobility group (HMG) domain factors/Unknown
+142,AC0040,MA0627.1,Pou2f3,Homeo domain factors,Unknown,23332764,Homeo domain factors
+143,AC0041,MA0102.1,Cebpa,Basic leucine zipper factors (bZIP),Unknown,1672737,Basic leucine zipper factors (bZIP)
+144,AC0042,MA0602.1,Arid5a,ARID,Unknown,25215497,ARID
+145,AC0043,filter57,filter57,Unknown,Unknown,Unknown,Unknown
+146,AC0043,filter7,filter7,Unknown,Unknown,Unknown,Unknown
+147,AC0044,MA0060.1,NFYA,Other alpha,Unknown,9469818,Other alpha
+148,AC0045,filter1,filter1,Unknown,Unknown,Unknown,Unknown
+149,AC0046,MA0485.1,Hoxc9,Homeo domain factors,Unknown,9079637,Homeo domain factors
+150,AC0046,MA0594.1,Hoxa9,Homeo domain factors,Unknown,12923056,Homeo domain factors
+151,AC0047,MA0911.1,Hoxa11,Homeo domain factors,Unknown,18585359,Homeo domain factors
+152,AC0048,MA0153.1,HNF1B,Homeo domain factors,Unknown,17916232,Homeo domain factors
+153,AC0049,MA2124.1,Hmga1,TATA-binding proteins,Unknown,24062859,TATA-binding proteins
+154,AC0050,MA0467.1,Crx,Homeo domain factors,Unknown,20463752,Homeo domain factors
+155,AC0050,MA0682.1,Pitx1,Homeo domain factors,Unknown,8675014,Homeo domain factors
+156,AC0050,MA0883.1,Dmbx1,Homeo domain factors,Unknown,23332764,Homeo domain factors
+157,AC0051,MA0631.1,Six3,Homeo domain factors,Unknown,18585360,Homeo domain factors
+158,AC0052,MA0062.2,Gabpa,Tryptophan cluster factors,Unknown,19160518,Tryptophan cluster factors/C2H2 zinc finger factors
+159,AC0052,MA0080.3,Spi1,Tryptophan cluster factors,Unknown,17916232,Tryptophan cluster factors/C2H2 zinc finger factors
+160,AC0052,MA0098.2,Ets1,Tryptophan cluster factors,Unknown,1542566,Tryptophan cluster factors/C2H2 zinc finger factors
+161,AC0052,MA0136.1,ELF5,Tryptophan cluster factors,Unknown,16704374,Tryptophan cluster factors/C2H2 zinc finger factors
+162,AC0052,MA0474.1,Erg,Tryptophan cluster factors,Unknown,23093599,Tryptophan cluster factors/C2H2 zinc finger factors
+163,AC0052,MA1992.1,Ikzf3,C2H2 zinc finger factors,Unknown,27664237,Tryptophan cluster factors/C2H2 zinc finger factors
+164,AC0052,MA2340.1,Zbtb2,C2H2 zinc finger factors,Unknown,28473536,Tryptophan cluster factors/C2H2 zinc finger factors
+165,AC0053,MA0152.1,NFATC2,Rel homology region (RHR) factors,Unknown,17916232,Rel homology region (RHR) factors
+166,AC0053,MA0606.2,Nfat5,Rel homology region (RHR) factors,Unknown,12374807,Rel homology region (RHR) factors
+167,AC0053,MA0624.2,Nfatc1,Rel homology region (RHR) factors,Unknown,23332764,Rel homology region (RHR) factors
+168,AC0054,filter21,filter21,Unknown,Unknown,Unknown,Unknown
+169,AC0055,MA0509.1,Rfx1,Fork head/winged helix factors,Unknown,20189986,Fork head/winged helix factors
+170,AC0055,MA1724.1,Rfx6,Fork head/winged helix factors,Unknown,33033118,Fork head/winged helix factors
+171,AC0056,MA1647.2,Prdm4,C2H2 zinc finger factors,Unknown,23918801,C2H2 zinc finger factors
+172,AC0057,MA1573.2,Thap11,C2CH THAP-type zinc finger factors,Unknown,20581084,C2CH THAP-type zinc finger factors/C2H2 zinc finger factors
+173,AC0057,MA2125.1,Zfp809,C2H2 zinc finger factors,Unknown,26417948,C2CH THAP-type zinc finger factors/C2H2 zinc finger factors
+174,AC0058,MA0144.1,Stat3,STAT domain factors,Unknown,18555785,STAT domain factors/C2H2 zinc finger factors/STAT domain factors/STAT domain factors
+175,AC0058,MA0463.1,Bcl6,C2H2 zinc finger factors,Unknown,7945383,STAT domain factors/C2H2 zinc finger factors/STAT domain factors/STAT domain factors
+176,AC0058,MA0518.1,Stat4,STAT domain factors,Unknown,19710469,STAT domain factors/C2H2 zinc finger factors/STAT domain factors/STAT domain factors
+177,AC0058,MA0519.1,Stat5a::Stat5b,STAT domain factors/STAT domain factors,Unknown,22158971,STAT domain factors/C2H2 zinc finger factors/STAT domain factors/STAT domain factors
+178,AC0058,MA1624.1,Stat5a,STAT domain factors,Unknown,10594041,STAT domain factors/C2H2 zinc finger factors/STAT domain factors/STAT domain factors
+179,AC0058,MA1625.1,Stat5b,STAT domain factors,Unknown,10594041,STAT domain factors/C2H2 zinc finger factors/STAT domain factors/STAT domain factors
+180,AC0059,MA0520.1,Stat6,STAT domain factors,Unknown,21828071,STAT domain factors
+181,AC0060,MA0162.1,Egr1,C2H2 zinc finger factors,Unknown,16041365,C2H2 zinc finger factors
+182,AC0060,MA0472.1,Egr2,C2H2 zinc finger factors,Unknown,7891721,C2H2 zinc finger factors
+183,AC0060,MA1627.1,Wt1,C2H2 zinc finger factors,Unknown,7862533,C2H2 zinc finger factors
+184,AC0060,MA1630.1,Znf281,C2H2 zinc finger factors,Unknown,19443739,C2H2 zinc finger factors
+185,AC0061,MA0079.2,SP1,C2H2 zinc finger factors,Unknown,17916232,C2H2 zinc finger factors
+186,AC0062,MA0493.1,Klf1,C2H2 zinc finger factors,Unknown,7682653,C2H2 zinc finger factors
+187,AC0062,MA0742.1,Klf12,C2H2 zinc finger factors,Unknown,16266294,C2H2 zinc finger factors
+188,AC0063,filter39,filter39,Unknown,Unknown,Unknown,Unknown
+189,AC0064,MA0469.1,E2F3,Fork head/winged helix factors,Unknown,1411535,Fork head/winged helix factors
+190,AC0065,MA0002.2,Runx1,Runt domain factors,Unknown,8413232,Runt domain factors/C2H2 zinc finger factors
+191,AC0065,MA0483.1,Gfi1B,C2H2 zinc finger factors,Unknown,19773260,Runt domain factors/C2H2 zinc finger factors
+192,AC0065,MA1989.1,Bcl11B,C2H2 zinc finger factors,Unknown,21912641,Runt domain factors/C2H2 zinc finger factors
+193,AC0066,MA0734.3,Gli2,C2H2 zinc finger factors,Unknown,2105456,C2H2 zinc finger factors
+194,AC0066,MA1990.1,Gli1,C2H2 zinc finger factors,Unknown,25476449,C2H2 zinc finger factors
+195,AC0067,filter68,filter68,Unknown,Unknown,Unknown,Unknown
+196,AC0068,filter77,filter77,Unknown,Unknown,Unknown,Unknown
+197,AC0069,filter79,filter79,Unknown,Unknown,Unknown,Unknown
+198,AC0070,MA0037.4,Gata3,Other C4 zinc finger-type factors,Unknown,8321207,Other C4 zinc finger-type factors/Other C4 zinc finger-type factors/Basic helix-loop-helix factors (bHLH)
+199,AC0070,MA0140.1,Gata1::Tal1,Other C4 zinc finger-type factors/Basic helix-loop-helix factors (bHLH),Unknown,20566737,Other C4 zinc finger-type factors/Other C4 zinc finger-type factors/Basic helix-loop-helix factors (bHLH)
+200,AC0070,MA0482.1,Gata4,Other C4 zinc finger-type factors,Unknown,7791790,Other C4 zinc finger-type factors/Other C4 zinc finger-type factors/Basic helix-loop-helix factors (bHLH)
+201,AC0071,MA0029.1,Mecom,C2H2 zinc finger factors,Unknown,8321231,C2H2 zinc finger factors
+202,AC0072,MA1998.1,Prdm14,C2H2 zinc finger factors,Unknown,20953172,C2H2 zinc finger factors
+203,AC0073,filter32,filter32,Unknown,Unknown,Unknown,Unknown
+204,AC0074,MA1615.1,Plagl1,C2H2 zinc finger factors,Unknown,28985358,C2H2 zinc finger factors
+205,AC0075,filter72,filter72,Unknown,Unknown,Unknown,Unknown
+206,AC0076,filter73,filter73,Unknown,Unknown,Unknown,Unknown
+207,AC0077,filter87,filter87,Unknown,Unknown,Unknown,Unknown
+208,AC0078,MA0506.2,Nrf1,Basic leucine zipper factors (bZIP),Unknown,12533512,Basic leucine zipper factors (bZIP)
+209,AC0079,MA2002.1,Zfp335,C2H2 zinc finger factors,Unknown,27401554,C2H2 zinc finger factors
+210,AC0080,filter28,filter28,Unknown,Unknown,Unknown,Unknown
+211,AC0081,MA0099.1,Fos::Jun,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP),Unknown,2243767,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)
+212,AC0081,MA0150.2,Nfe2l2,Basic leucine zipper factors (bZIP),Unknown,17916232,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)
+213,AC0081,MA0489.2,Jun,Basic leucine zipper factors (bZIP),Unknown,21703547,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)
+214,AC0081,MA0591.1,Bach1::Mafk,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP),Unknown,11069897,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)
+215,AC0081,MA0659.3,Mafg,Basic leucine zipper factors (bZIP),Unknown,8264639,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)
+216,AC0081,MA1988.1,Atf3,Basic leucine zipper factors (bZIP),Unknown,27146783,Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)/Basic leucine zipper factors (bZIP)
+217,AC0082,MA0018.2,CREB1,Basic leucine zipper factors (bZIP),Unknown,17916232,Basic leucine zipper factors (bZIP)
+218,AC0082,MA0604.1,Atf1,Basic leucine zipper factors (bZIP),Unknown,1655749,Basic leucine zipper factors (bZIP)
+219,AC0082,MA0605.1,Atf3,Basic leucine zipper factors (bZIP),Unknown,1655749,Basic leucine zipper factors (bZIP)
+220,AC0082,MA0609.1,Crem,Basic leucine zipper factors (bZIP),Unknown,20920259,Basic leucine zipper factors (bZIP)
+221,AC0082,MA0840.1,Creb5,Basic leucine zipper factors (bZIP),Unknown,11134034,Basic leucine zipper factors (bZIP)
+222,AC0083,MA0092.1,Hand1::Tcf3,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH),Unknown,7791788,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/SMAD/NF-1 DNA-binding domain factors/Basic helix-loop-helix factors (bHLH)
+223,AC0083,MA1153.1,Smad4,SMAD/NF-1 DNA-binding domain factors,Unknown,15329343,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/SMAD/NF-1 DNA-binding domain factors/Basic helix-loop-helix factors (bHLH)
+224,AC0083,MA2123.1,Hand1,Basic helix-loop-helix factors (bHLH),Unknown,20975697,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/SMAD/NF-1 DNA-binding domain factors/Basic helix-loop-helix factors (bHLH)
+225,AC0084,MA0739.1,Hic1,C2H2 zinc finger factors,Unknown,15231840,C2H2 zinc finger factors
+226,AC0085,MA0035.1,Gata1,Other C4 zinc finger-type factors,Unknown,8321207,Other C4 zinc finger-type factors/Unknown
+227,AC0085,filter2,filter2,Unknown,Unknown,Unknown,Other C4 zinc finger-type factors/Unknown
+228,AC0086,MA0007.3,Ar,Nuclear receptors with C4 zinc fingers,Unknown,20943813,Nuclear receptors with C4 zinc fingers
+229,AC0087,MA0113.1,NR3C1,Nuclear receptors with C4 zinc fingers,Unknown,15563547,Nuclear receptors with C4 zinc fingers
+230,AC0088,MA0164.1,Nr2e3,Nuclear receptors with C4 zinc fingers,Unknown,15634773,Nuclear receptors with C4 zinc fingers
+231,AC0089,MA1684.1,Foxn1,Fork head/winged helix factors,Unknown,23836653,Fork head/winged helix factors
+232,AC0090,MA2126.1,Zfp961,C2H2 zinc finger factors,Unknown,35259018,C2H2 zinc finger factors
+233,AC0091,MA0111.1,Spz1,Basic helix-loop-helix factors (bHLH),Unknown,11165476,Basic helix-loop-helix factors (bHLH)
+234,AC0092,MA0146.1,Zfx,C2H2 zinc finger factors,Unknown,18555785,C2H2 zinc finger factors
+235,AC0093,filter10,filter10,Unknown,Unknown,Unknown,Unknown
+236,AC0094,filter30,filter30,Unknown,Unknown,Unknown,Unknown
+237,AC0095,MA0141.1,Esrrb,Nuclear receptors with C4 zinc fingers,Unknown,18555785,Nuclear receptors with C4 zinc fingers
+238,AC0095,MA0160.1,NR4A2,Nuclear receptors with C4 zinc fingers,Unknown,17916232,Nuclear receptors with C4 zinc fingers
+239,AC0095,MA0505.1,Nr5a2,Nuclear receptors with C4 zinc fingers,Unknown,12853459,Nuclear receptors with C4 zinc fingers
+240,AC0095,MA0512.1,Rxra,Nuclear receptors with C4 zinc fingers,Unknown,10669605,Nuclear receptors with C4 zinc fingers
+241,AC0095,MA0592.2,Esrra,Nuclear receptors with C4 zinc fingers,Unknown,17488637,Nuclear receptors with C4 zinc fingers
+242,AC0095,MA0643.1,Esrrg,Nuclear receptors with C4 zinc fingers,Unknown,15475169,Nuclear receptors with C4 zinc fingers
+243,AC0095,MA0676.1,Nr2e1,Nuclear receptors with C4 zinc fingers,Unknown,10706625,Nuclear receptors with C4 zinc fingers
+244,AC0095,MA0858.1,Rarb,Nuclear receptors with C4 zinc fingers,Unknown,15019979,Nuclear receptors with C4 zinc fingers
+245,AC0095,MA1110.2,Nr1H4,Nuclear receptors with C4 zinc fingers,Unknown,24498423,Nuclear receptors with C4 zinc fingers
+246,AC0095,MA1540.2,NR5A1,Nuclear receptors with C4 zinc fingers,Unknown,10913126,Nuclear receptors with C4 zinc fingers
+247,AC0095,MA1996.1,Nr1H2,Nuclear receptors with C4 zinc fingers,Unknown,31175293,Nuclear receptors with C4 zinc fingers
+248,AC0095,MA2337.1,Nr1h3,Nuclear receptors with C4 zinc fingers,Unknown,31175293,Nuclear receptors with C4 zinc fingers
+249,AC0095,MA2338.1,Ppara,Nuclear receptors with C4 zinc fingers,Unknown,31175293,Nuclear receptors with C4 zinc fingers
+250,AC0096,MA0112.1,ESR1,Nuclear receptors with C4 zinc fingers,Unknown,15563547,Nuclear receptors with C4 zinc fingers
+251,AC0097,MA0728.1,Nr2F6,Nuclear receptors with C4 zinc fingers,Unknown,12690040,Nuclear receptors with C4 zinc fingers
+252,AC0097,MA0857.1,Rarb,Nuclear receptors with C4 zinc fingers,Unknown,15019979,Nuclear receptors with C4 zinc fingers
+253,AC0097,MA0859.1,Rarg,Nuclear receptors with C4 zinc fingers,Unknown,15019979,Nuclear receptors with C4 zinc fingers
+254,AC0098,MA0494.1,Nr1h3::Rxra,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers,Unknown,21349840,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers
+255,AC0098,MA0860.1,Rarg,Nuclear receptors with C4 zinc fingers,Unknown,15019979,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers
+256,AC0099,MA0693.1,Vdr,Nuclear receptors with C4 zinc fingers,Unknown,8065900,Nuclear receptors with C4 zinc fingers
+257,AC0100,MA0768.2,Lef1,High-mobility group (HMG) domain factors,Unknown,19443739,High-mobility group (HMG) domain factors/Homeo domain factors
+258,AC0100,MA0769.1,Tcf7,High-mobility group (HMG) domain factors,Unknown,16710294,High-mobility group (HMG) domain factors/Homeo domain factors
+259,AC0100,MA1991.1,Hnf1A,Homeo domain factors,Unknown,30420627,High-mobility group (HMG) domain factors/Homeo domain factors
+260,AC0101,MA0065.2,Pparg::Rxra,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers,Unknown,18981474,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers
+261,AC0101,MA0114.3,Hnf4a,Nuclear receptors with C4 zinc fingers,Unknown,12385991,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers
+262,AC0101,MA0677.1,Nr2f6,Nuclear receptors with C4 zinc fingers,Unknown,12690040,Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers/Nuclear receptors with C4 zinc fingers
+263,AC0102,filter49,filter49,Unknown,Unknown,Unknown,Unknown
+264,AC0103,filter60,filter60,Unknown,Unknown,Unknown,Unknown
+265,AC0104,MA0067.1,Pax2,Paired box factors,Unknown,8132558,Paired box factors/Basic helix-loop-helix factors (bHLH)
+266,AC0104,MA1995.1,Npas4,Basic helix-loop-helix factors (bHLH),Unknown,31585079,Paired box factors/Basic helix-loop-helix factors (bHLH)
+267,AC0105,filter51,filter51,Unknown,Unknown,Unknown,Unknown
+268,AC0106,MA0004.1,Arnt,Basic helix-loop-helix factors (bHLH),Unknown,7592839,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+269,AC0106,MA0104.1,Mycn,Basic helix-loop-helix factors (bHLH),Unknown,1594445,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+270,AC0106,MA0147.1,Myc,Basic helix-loop-helix factors (bHLH),Unknown,18555785,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+271,AC0106,MA0259.1,ARNT::HIF1A,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH),Unknown,16234508,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+272,AC0106,MA0464.1,Bhlhe40,Basic helix-loop-helix factors (bHLH),Unknown,11880636,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+273,AC0106,MA0603.1,Arntl,Basic helix-loop-helix factors (bHLH),Unknown,7592839,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+274,AC0106,MA0608.1,Creb3l2,Basic leucine zipper factors (bZIP),Unknown,23332764,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+275,AC0106,MA0620.1,Mitf,Basic helix-loop-helix factors (bHLH),Unknown,12086670,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+276,AC0106,MA0622.1,Mlxip,Basic helix-loop-helix factors (bHLH),Unknown,12446771,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+277,AC0106,MA0626.1,Npas2,Basic helix-loop-helix factors (bHLH),Unknown,23332764,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+278,AC0106,MA0632.1,Tcfl5,Basic helix-loop-helix factors (bHLH),Unknown,15585666,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+279,AC0106,MA0829.1,Srebf1,Basic helix-loop-helix factors (bHLH),Unknown,11591434,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+280,AC0106,MA1099.1,Hes1,Basic helix-loop-helix factors (bHLH),Unknown,15870295,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)/Basic leucine zipper factors (bZIP)
+281,AC0107,MA0616.1,Hes2,Basic helix-loop-helix factors (bHLH),Unknown,8354270,Basic helix-loop-helix factors (bHLH)
+282,AC0108,MA0006.1,Ahr::Arnt,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH),Unknown,7592839,Basic helix-loop-helix factors (bHLH)/Basic helix-loop-helix factors (bHLH)
+283,AC0109,filter29,filter29,Unknown,Unknown,Unknown,Unknown
+284,AC0110,MA0461.1,Atoh1,Basic helix-loop-helix factors (bHLH),Unknown,21795538,Basic helix-loop-helix factors (bHLH)
+285,AC0110,MA0499.1,Myod1,Basic helix-loop-helix factors (bHLH),Unknown,20412780,Basic helix-loop-helix factors (bHLH)
+286,AC0110,MA0500.1,Myog,Basic helix-loop-helix factors (bHLH),Unknown,16437161,Basic helix-loop-helix factors (bHLH)
+287,AC0110,MA0521.1,Tcf12,Basic helix-loop-helix factors (bHLH),Unknown,1501295,Basic helix-loop-helix factors (bHLH)
+288,AC0110,MA0522.1,Tcf3,Basic helix-loop-helix factors (bHLH),Unknown,10594029,Basic helix-loop-helix factors (bHLH)
+289,AC0110,MA0607.1,Bhlha15,Basic helix-loop-helix factors (bHLH),Unknown,9482738,Basic helix-loop-helix factors (bHLH)
+290,AC0110,MA0668.2,Neurod2,Basic helix-loop-helix factors (bHLH),Unknown,22445365,Basic helix-loop-helix factors (bHLH)
+291,AC0110,MA0816.1,Ascl2,Basic helix-loop-helix factors (bHLH),Unknown,19443739,Basic helix-loop-helix factors (bHLH)
+292,AC0110,MA0832.1,Tcf21,Basic helix-loop-helix factors (bHLH),Unknown,26020271,Basic helix-loop-helix factors (bHLH)
+293,AC0110,MA1467.2,Atoh1,Basic helix-loop-helix factors (bHLH),Unknown,22985730,Basic helix-loop-helix factors (bHLH)
+294,AC0110,MA1472.2,Bhlha15,Basic helix-loop-helix factors (bHLH),Unknown,28174210,Basic helix-loop-helix factors (bHLH)
+295,AC0110,MA1618.1,Ptf1a,Basic helix-loop-helix factors (bHLH),Unknown,23754747,Basic helix-loop-helix factors (bHLH)
+296,AC0110,MA1619.1,Ptf1A,Basic helix-loop-helix factors (bHLH),Unknown,23754747,Basic helix-loop-helix factors (bHLH)
+297,AC0110,MA1620.1,Ptf1A,Basic helix-loop-helix factors (bHLH),Unknown,23754747,Basic helix-loop-helix factors (bHLH)
+298,AC0110,MA1993.1,Neurod2,Basic helix-loop-helix factors (bHLH),Unknown,22445365,Basic helix-loop-helix factors (bHLH)
+299,AC0110,MA1997.1,Olig2,Basic helix-loop-helix factors (bHLH),Unknown,20959288,Basic helix-loop-helix factors (bHLH)
+300,AC0111,MA0100.1,Myb,Tryptophan cluster factors,Unknown,1861984,Tryptophan cluster factors
+301,AC0112,MA0623.1,Neurog1,Basic helix-loop-helix factors (bHLH),Unknown,23332764,Basic helix-loop-helix factors (bHLH)
+302,AC0112,MA0633.1,Twist2,Basic helix-loop-helix factors (bHLH),Unknown,10594029,Basic helix-loop-helix factors (bHLH)
+303,AC0113,MA1524.2,Msgn1,Basic helix-loop-helix factors (bHLH),Unknown,21750544,Basic helix-loop-helix factors (bHLH)
+304,AC0114,MA0095.3,Yy1,C2H2 zinc finger factors,Unknown,18950698,C2H2 zinc finger factors
+305,AC0115,MA0009.1,Tbxt,T-Box factors,Unknown,8344258,T-Box factors
+306,AC0115,MA1567.2,Tbx6,T-Box factors,Unknown,12093383,T-Box factors
+307,AC0116,MA1616.1,Prdm15,C2H2 zinc finger factors,Unknown,28740264,C2H2 zinc finger factors
+308,AC0117,MA2001.1,Six4,Homeo domain factors,Unknown,14966291,Homeo domain factors
+309,AC0118,MA0697.2,Zic3,C2H2 zinc finger factors,Unknown,19443739,C2H2 zinc finger factors
+310,AC0118,MA1628.1,Zic1::Zic2,C2H2 zinc finger factors,Unknown,11038359,C2H2 zinc finger factors
+311,AC0118,MA1629.1,Zic2,C2H2 zinc finger factors,Unknown,11038359,C2H2 zinc finger factors
+312,AC0119,MA0117.2,Mafb,Basic leucine zipper factors (bZIP),Unknown,9571165,Basic leucine zipper factors (bZIP)
+313,AC0120,MA0498.1,Meis1,Homeo domain factors,Unknown,9315626,Homeo domain factors
