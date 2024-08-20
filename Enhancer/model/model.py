@@ -504,13 +504,6 @@ class DeepSTARR(nn.Module):
     
 
 class ExplaiNN3_interact(nn.Module):
-    """
-    [B,4,608] -> replicate [B, 4 * n_cnn, 608] -> Conv1d(4 * n_cnn, n_cnn, kernel = 19)
-    -> [B, n_cnn, 590] -> ExpAct -> Interaction Block -> MaxPool (7,7) -> [B, n_cnn, 84] -> flat ->
-    [B, n_cnn * 84] -> Unsqueeze -> [B, n_cnn * 84, 1] -> Conv1d (n_cnn * 84, n_cnn * 100, kernel = 1) ->
-    [B, n_cnn * 100, 1] -> Conv1d (n_cnn * 100, n_cnn * 1, kernel = 1) -> [B, n_cnn, 1]
-    -> flat -> [B, n_cnn] -> Linear (n_cnn, num_classes) -> [B, num_classes]
-    """
     def __init__(self, num_cnns, input_length, num_classes, 
                  filter_size=19, num_fc=2, pool_size=7, pool_stride=7, 
                  drop_out=0.3, weight_path=None):
@@ -556,6 +549,97 @@ class ExplaiNN3_interact(nn.Module):
         )
 
         self.linears2 = nn.Sequential(
+            nn.Flatten(),
+            Unsqueeze(),
+            nn.Conv1d(in_channels=int(((input_length - (filter_size-1)) - (pool_size-1)-1)/pool_stride + 1) * num_cnns,
+                               out_channels=100 * num_cnns, kernel_size=1, groups=num_cnns),
+            nn.BatchNorm1d(100 * num_cnns, 1e-05, 0.1, True),
+            nn.ReLU(),
+            nn.Dropout(drop_out),
+            nn.Conv1d(in_channels=100 * num_cnns, out_channels=1 * num_cnns, kernel_size=1, groups=num_cnns),
+            nn.BatchNorm1d(1 * num_cnns, 1e-05, 0.1, True),
+            nn.ReLU(),
+            nn.Flatten()
+        )
+
+        self.final = nn.Linear(num_cnns + num_interaction_term, num_classes)
+
+        if weight_path:
+            self.load_state_dict(torch.load(weight_path))
+        
+    def forward(self, x):
+        x = x.repeat(1, self._options["num_cnns"], 1)
+        x = self.linears1(x)
+
+        # Interaction Block after ExpActivation
+        motif_pairs = []
+        for i in range(self._options["num_cnns"]):
+            for j in range(i + 1, self._options["num_cnns"]):
+                pair = torch.cat([x[:, i:i+1, :], x[:, j:j+1, :]], dim=1)
+                motif_pairs.append(pair)
+        interaction_x = torch.cat(motif_pairs, dim=1)
+        interaction_x = self.interaction(interaction_x)
+        print(interaction_x.shape)
+
+        x = self.linears2(x)
+        print(x.shape)
+
+        x = torch.cat((x, interaction_x), dim=1)
+        print(x.shape)
+
+
+        x = self.final(x)
+        
+        return x
+
+
+
+class ExplaiNN3_interact2(nn.Module):
+    def __init__(self, num_cnns, input_length, num_classes, 
+                 filter_size=19, interaction_filter_size = 40, num_fc=2, pool_size=7, pool_stride=7, 
+                 drop_out=0.3, weight_path=None):
+        super(ExplaiNN3_interact2, self).__init__()
+        self._options = {
+            "num_cnns": num_cnns,
+            "input_length": input_length,
+            "num_classes": num_classes,
+            "filter_size": filter_size,
+            "num_fc": num_fc,
+            "pool_size": pool_size,
+            "pool_stride": pool_stride,
+            "weight_path": weight_path,
+            "num_interaction_term": num_cnns * (num_cnns-1) / 2
+        }
+        self.linears1 = nn.Sequential(
+            nn.Conv1d(in_channels=4 * num_cnns, out_channels=1 * num_cnns, kernel_size=filter_size, groups=num_cnns),
+            nn.BatchNorm1d(num_cnns),
+            ExpActivation()
+            )       
+
+        # Interaction Block
+        num_interaction_term = int(num_cnns * (num_cnns-1) / 2)
+        activation_length = int(input_length - (filter_size-1))
+        self.interaction = nn.Sequential(
+            nn.Conv1d(in_channels= 2 * num_interaction_term,
+               out_channels=num_interaction_term, kernel_size=interaction_filter_size, groups= num_interaction_term),
+            nn.BatchNorm1d(num_interaction_term),
+            ExpActivation(),
+            nn.MaxPool1d(pool_size, pool_stride),
+            nn.Flatten(),
+            Unsqueeze(),
+            nn.Conv1d(in_channels=int(((activation_length - (interaction_filter_size-1)) - (pool_size-1)-1)/pool_stride + 1) * num_interaction_term,
+                        out_channels=10 * num_interaction_term, kernel_size=1,
+                        groups=num_interaction_term),
+            nn.ReLU(),
+            nn.Dropout(drop_out),
+            nn.Conv1d(in_channels=10 * num_interaction_term, out_channels=1 * num_interaction_term, kernel_size=1, groups=num_interaction_term),
+            nn.BatchNorm1d(1 * num_interaction_term, 1e-05, 0.1, True),
+            nn.ReLU(),
+            nn.Flatten()
+        )
+
+        self.linears2 = nn.Sequential(
+            nn.MaxPool1d(pool_size, pool_stride),
             nn.Flatten(),
             Unsqueeze(),
             nn.Conv1d(in_channels=int(((input_length - (filter_size-1)) - (pool_size-1)-1)/pool_stride + 1) * num_cnns,

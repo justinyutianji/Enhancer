@@ -6,7 +6,7 @@ import sys
 
 sys.path.append('../../../Enhancer')  
 from train.utils import EnhancerDataset, split_dataset, train_model, regression_model_plot, plot_filter_weight
-from model.model import ExplaiNN3_interact
+from model.model import ExplaiNN3_interact2
 
 # Import or define the functions and classes
 # Make sure these are available or define them if not
@@ -21,9 +21,13 @@ from model.model import ExplaiNN3_interact
 seed = 42
 batch = 200
 num_cnns = 20
+interaction_filter_size= 40
+filter_size = 19
 learning_rate = 4e-4
+drop_out = 0.3
+
 target_labels = ['GFP']
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/GFP_Pred_Results/ExplaiNN_Interaction_results'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/GFP_Pred_Results/ExplaiNN_Interaction2_results'
 
 
 print("Now reading the real data file")
@@ -44,9 +48,9 @@ print("Success!")
 print('')
 print("Now start training")
 
-input_model = ExplaiNN3_interact(num_cnns = num_cnns, input_length = 608, num_classes = 1, 
-                 filter_size = 19, num_fc=2, pool_size=7, pool_stride=7, 
-                 drop_out = 0.3, weight_path = None)# Training
+input_model = ExplaiNN3_interact2(num_cnns = num_cnns, input_length = 608, num_classes = 1, 
+                 filter_size = filter_size, interaction_filter_size= interaction_filter_size, num_fc=2, pool_size=7, pool_stride=7, 
+                 drop_out = drop_out, weight_path = None)
 
 _, _, model, train_losses_by_batch, test_losses_by_batch, results, best_pearson_epoch, best_r2_epoch, device  = train_model(input_model, train_loader, test_loader, 
                                                                                                                             target_labels=target_labels,num_epochs=200, 
@@ -59,8 +63,8 @@ print("\n")
 print("\n")
 print("Now start plotting")
 
-model_path = f'/pmglocal/ty2514/Enhancer/Enhancer/data/GFP_Pred_Results/ExplaiNN_Interaction_results/model_epoch_{best_r2_epoch}.pth'
-dir_path = '/pmglocal/ty2514/Enhancer/Enhancer/data/GFP_Pred_Results/ExplaiNN_Interaction_results'
+model_path = f'/pmglocal/ty2514/Enhancer/Enhancer/data/GFP_Pred_Results/ExplaiNN_Interaction2_results/model_epoch_{best_r2_epoch}.pth'
+dir_path = '/pmglocal/ty2514/Enhancer/Enhancer/data/GFP_Pred_Results/ExplaiNN_Interaction2_results'
 mse, rmse, mae, r2, pearson_corr, spearman_corr = regression_model_plot(
     model, test_loader, train_losses_by_batch, test_losses_by_batch, 
     device, results, label_mode = "score", save_plot = True, dir_path = dir_path, model_path = model_path, best_model=best_r2_epoch)
