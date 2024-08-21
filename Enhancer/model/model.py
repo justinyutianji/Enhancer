@@ -670,13 +670,13 @@ class ExplaiNN3_interact2(nn.Module):
                 motif_pairs.append(pair)
         interaction_x = torch.cat(motif_pairs, dim=1)
         interaction_x = self.interaction(interaction_x)
-        print(interaction_x.shape)
+        #print(interaction_x.shape)
 
         x = self.linears2(x)
-        print(x.shape)
+        #print(x.shape)
 
         x = torch.cat((x, interaction_x), dim=1)
-        print(x.shape)
+        #print(x.shape)
 
 
         x = self.final(x)

@@ -19,8 +19,8 @@ from model.model import ExplaiNN3_interact2
 
 # Define some hyperparameters
 seed = 42
-batch = 200
-num_cnns = 20
+batch = 800
+num_cnns = 40
 interaction_filter_size= 40
 filter_size = 19
 learning_rate = 1e-4
