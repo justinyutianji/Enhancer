@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, auc, precision_recall_curve, average_precision_score,mean_squared_error, r2_score, mean_absolute_error
 from scipy.stats import ks_2samp, pearsonr, spearmanr
 import random
+import glob
 
 def process_data(fasta_dir, frag_seq_dir, stan_values_dir, save_df):
     """
@@ -488,6 +489,47 @@ def train_model(model, train_loader, test_loader, target_labels, num_epochs=100,
     print(f"Best Pearson Correlation is {best_pearson} at epoch {best_pearson_epoch}")
     print(f"Best R2 Square Correlation is {best_r2} at epoch {best_r2_epoch}")
 
+    #############
+    # Deleting models in the output directory, except the model at best_pearson and best_r2 epoch respectively
+    # Get list of all .pth files in the directory
+    model_files = glob.glob(f'{dir_path}/*.pth')
+
+    # Create a flag to check if best_pearson_epoch and best_r2_epoch are the same epoch
+    same_epoch = best_pearson_epoch == best_r2_epoch
+
+    print('\n')
+    print('*** Deleting model pathes ***')
+    # Loop through all model files
+    for model_file in model_files:
+        # Extract the epoch number from the file name
+        file_name = os.path.basename(model_file)
+        epoch = int(file_name.split('_')[-1].split('.')[0])
+
+        if epoch == best_pearson_epoch:
+            # Rename to 'best_pearson_model_epoch_{epoch}.pth'
+            print(f'model at best_pearson_epoch: {best_pearson_epoch} is saved')
+            new_name = f'{dir_path}/best_pearson_model_epoch_{epoch}.pth'
+            os.rename(model_file, new_name)
+            
+            # If the best Pearson and R2 epoch are the same, save the same model twice with different names
+            if same_epoch:
+                print(f'model at best_r2_epoch: {best_r2_epoch} is saved')
+                new_name_r2 = f'{dir_path}/best_r2_best_pearson_model_epoch_{epoch}.pth'
+                os.rename(new_name, new_name_r2)  # Copy the model file with R2 naming
+            continue
+        
+        if epoch == best_r2_epoch:
+            # Rename to 'best_r2_model_epoch_{epoch}.pth' only if it's not already handled by Pearson
+            print(f'model at best_r2_epoch: {best_r2_epoch} is saved')
+            if not same_epoch:
+                new_name = f'{dir_path}/best_r2_model_epoch_{epoch}.pth'
+                os.rename(model_file, new_name)
+            continue
+        
+        # If it's neither of the best epochs, delete the file
+        os.remove(model_file)
+        #############
+
     return train_losses, test_losses, model, train_losses_by_batch, test_losses_by_batch,results, best_pearson_epoch, best_r2_epoch, device
 
 def evaluate_regression_model(model, test_loader, device):
@@ -633,7 +675,7 @@ def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses
         actuals_g_minus = np.array(actuals_g_minus)
         actuals_dist = np.array(actuals_dist)
     else:
-        TypeError("label_mode needs to be G+, G-, both, or distance")
+        TypeError("label_mode needs to be G+, G-, score, GFP, both, or distance")
 
     # If we want to include the first epoch's loss and start ticks from 1
     #epochs = range(2, len(train_losses_by_batch) + 1)
