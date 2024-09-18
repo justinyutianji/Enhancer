@@ -197,6 +197,17 @@ def convert_one_hot_back_to_seq(dataloader):
             sequences.append(seq)
     return sequences
 
+def find_tsv_file_path(dir_path):
+    search_pattern = os.path.join(dir_path, "*.tsv")
+    tsv_files = glob.glob(search_pattern)
+    
+    if len(tsv_files) == 1:
+        return tsv_files[0]  # Return the full path of the .tsv file
+    elif len(tsv_files) > 1:
+        raise ValueError("More than one .tsv file found.")
+    else:
+        raise FileNotFoundError("No .tsv file found.")
+
 def split_dataset(df, split_type='random', key=None, cutoff=0.8, seed=None):
     """
     Splits a dataset based on the specified criteria.
@@ -241,12 +252,9 @@ class EnhancerDataset(Dataset):
         Initialize the dataset with the mode specifying which labels to include.
         
         Args:
-        label_mode (str): Specifies the label mode. Can be 'G+', 'G-','both','distance','GFP', or 'score'.
-                            'G+' only includes G+ values,
-                            'G-' only includes G- values,
-                            'both' includes both G+ and G- values stacked together.
-                            'distance' includes both G+ and G- values and motif distance scores
-                            'GFP' includes G+ minus G-    
+        feature_list (List): Specifies a list of feature names (column names in the input dataset) 
+                            used to train the model. All the feature names need to exist 
+                            in the input dataset column names.
         scale_mode (str): Specifies the scaling mode. Can be 'none', '0-1', or '-1-1'.
                               'none' means no scaling, '0-1' scales labels to [0, 1],
                               and '-1-1' scales labels to [-1, 1].
