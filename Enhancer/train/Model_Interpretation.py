@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
-from utils import EnhancerDataset, split_dataset, train_model, regression_model_plot, plot_filter_weight, find_tsv_file_path
+from utils import EnhancerDataset, find_tsv_file_path
+from tools import plot_filter_weight
 import numpy as np
 import pandas as pd
 import subprocess
@@ -9,7 +10,6 @@ import torch.nn.modules.activation as activation
 import sys
 from sklearn.model_selection import train_test_split
 from scipy.cluster.hierarchy import dendrogram, linkage
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, auc, precision_recall_curve, average_precision_score
 import interpretation
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -36,6 +36,7 @@ upper_bound = 0.25
 save_cutoff_plot = True
 meme_package_dir = '/pmglocal/ty2514/meme'
 jaspar_meme_file_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/databases/jaspar2024/JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_meme.meme'
+tf_cluster_db_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/JASPAR2024_mus_musculus_non-redundant_results/metadata.tsv'
 tomtom_result_dir = os.path.join(result_dir, 'tomtom_results')
 target_labels = ['GFP+','GFP-']
 # Update the PATH environment variable
@@ -247,36 +248,51 @@ print('--------------------------------------------------------')
 print('***********************   6/5   ************************')
 print('--------------------------------------------------------')
 print('Annotate Each Filter!')
+# Annotate filter by filter -> jasper TF -> TF cluster
+# Find directory of tomtom results 
 tomtom_comparison_result_dir = find_tsv_file_path(tomtom_result_dir)
-tomtom_results = pd.read_csv(tomtom_comparison_result_dir,
-                                        sep="\t",comment="#")
+# Load JASPER Clustering result (jasper TF -> TF cluster)
+cluster_results = pd.read_csv(tf_cluster_db_dir,sep="\t",comment="#")
+# Load tomtom comparison results between filter PWM and JASPER mus muscus TF database (filter -> jasper TF)
+tomtom_results = pd.read_csv(tomtom_comparison_result_dir,sep="\t",comment="#")
 filters_with_min_q = tomtom_results.groupby('Query_ID').min()["q-value"]
 tomtom_results = tomtom_results[["Target_ID", "Query_ID", "q-value"]]
 tomtom_results = tomtom_results[tomtom_results["q-value"]<0.05]
-cisbp_motifs = {}
-
-# Get the .txt file directory by changing the extension of jaspar_meme_file_dir from .meme to .txt 
-jaspar_txt_file_dir = os.path.splitext(jaspar_meme_file_dir)[0] + '.txt'
-with open(jaspar_txt_file_dir) as f:
-    for line in f:
-        if "MOTIF" in line:
-            motif = line.strip().split()[-1]
-            name_m = line.strip().split()[-2]
-            cisbp_motifs[name_m] = motif
-
+# Create dictionaries to map motif id to cluster; tf_name; family_name
+motif_to_cluster = cluster_results.set_index('motif_id')['cluster'].to_dict()
+motif_to_tf_name = cluster_results.set_index('motif_id')['tf_name'].to_dict()
+motif_to_family_name = cluster_results.set_index('motif_id')['family_name'].to_dict()
 filters = tomtom_results["Query_ID"].unique()
-annotation = {}
+
+# Assuming `annotation` is already populated
+annotation_data = []
+
 for f in filters:
     t = tomtom_results[tomtom_results["Query_ID"] == f]
     target_id = t["Target_ID"]
+
     if len(target_id) > 5:
         target_id = target_id[:5]
+
     # Join Unique annotations by '/'
-    ann = "/".join({cisbp_motifs[i]: i for i in target_id.values})
-    annotation[f] = ann
-print("Annotation is generated!")
-annotation = pd.Series(annotation)
-print(annotation)
+    cluster = "/".join({motif_to_cluster[i]: i for i in target_id.values})
+    tf_name = "/".join({motif_to_tf_name[i]: i for i in target_id.values})
+    family_name = "/".join({motif_to_family_name[i]: i for i in target_id.values})
+
+    # Append the data to the list
+    annotation_data.append({
+        'filter': f,
+        'cluster': cluster,
+        'tf_name': tf_name,
+        'family_name': family_name
+    })
+
+# Create a DataFrame from the collected data
+annotation_df = pd.DataFrame(annotation_data)
+
+weights_dir = os.path.join(result_dir, 'weights')
+os.makedirs(weights_dir, exist_ok = True)
+annotation_df.to_csv(os.path.join(weights_dir,'filter_annotation.csv'), index=False)
 
 print('--------------------------------------------------------')
 print('***********************   7/5   ************************')
@@ -284,62 +300,36 @@ print('--------------------------------------------------------')
 print('Get Weight of Each Filter!')
 weights = explainn.final.weight.detach().cpu().numpy()
 print(f'weight_df has shape: {weights.shape} (number of labels, number of fileters)')
-filters = ["filter"+str(i) for i in range(num_cnns)]
-for i in annotation.keys():
-    filters[int(i.split("filter")[-1])] = annotation[i]
+filters = ["f"+str(i) for i in range(num_cnns)]
+for index,row in annotation_df.iterrows():
+    filter = row['filter']
+    split_string = filter.split('filter', 1)
+    # change 'filter{i}' to 'f{i}'. e.g. filter20 -> f20
+    new_filter_name = 'f' + split_string[1].strip()
+    # Check if new_filter_name is in the filters list
+    if new_filter_name in filters:
+        # Find the index of the element to be replaced
+        index_to_replace = filters.index(new_filter_name)
+        # Replace the element in the filters list
+        filters[index_to_replace] = f"{row['cluster']}({row['tf_name']})-{new_filter_name}"
+
 weight_df = pd.DataFrame(weights, target_labels, columns=filters)
-weight_file_dir = os.path.join(result_dir, 'filter_weights.csv')
+weight_file_dir = os.path.join(weights_dir, 'filter_weights.csv')
 # Save the DataFrame to a CSV file
 weight_df.to_csv(weight_file_dir, index=True)  # Set index=True if you want to save the index
 
 print(f'Weights saved to {weight_file_dir}')
 print('\n')
+print('Plotting weights of different filters')
+# Plotting weight for each filter using bar plot
+plot_filter_weight(weight_df, weights_dir)
+# Plotting weight only for filters with TF annotattions using bar plot
+annotated_weight_df = weight_df.loc[:, weight_df.columns.str.contains('-')]
+plot_filter_weight(annotated_weight_df, weights_dir)
 
 print('--------------------------------------------------------')
 print('***********************   8/5   ************************')
 print('--------------------------------------------------------')
-print('Plotting weights of different filters')
-weight_plot_file_dir = os.path.join(result_dir, 'filter_weights.png')
-# Assuming weight_df is a DataFrame with multiple rows and 90 columns
-num_rows = len(weight_df.index)  # Number of rows (features or categories)
-
-# Set up a figure with subplots for each row
-fig, axes = plt.subplots(nrows=num_rows, ncols=1, figsize=(math.ceil(0.165 * num_cnns), 6 * num_rows))
-
-# Loop through each row to create a separate plot
-for ax, (index, row) in zip(axes.flatten(), weight_df.iterrows()):
-    # Sort the row in descending order by weight values
-    sorted_row = row.sort_values(ascending=False)
-
-    # Extract labels (column names, now sorted) and values (sorted weights)
-    labels = sorted_row.index
-    values = sorted_row.values
-
-    # Define colors for the bars based on a condition (customize as needed)
-    colors = ['red' if 'filter' not in label.lower() else 'royalblue' for label in labels]
-
-    # Create the bar plot on the specific subplot axis
-    ax.bar(labels, values, color=colors)
-
-    # Label customization
-    ax.set_xlabel('Column Names')
-    ax.set_ylabel('Weight Values')
-    ax.set_title(f'Ranked Weight Distribution for {index}')
-    ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=90)  # Rotate labels to avoid overlap
-
-    # Optionally annotate specific bars (customize as needed)
-    for i, value in enumerate(values):
-        if 'filter' not in labels[i].lower():
-            ax.text(i, value, f'{value:.2f}', ha='center', va='bottom', color='darkred',fontsize = 6)
-
-# Adjust layout to prevent overlap
-fig.tight_layout()
-
-# Save the plot to the specified file path
-plt.savefig(weight_plot_file_dir, bbox_inches='tight')  # bbox_inches='tight' helps to fit the layout
-
-# Optionally close the figure if you don't want to keep it in memory
-plt.close(fig)
-print(f'Weight Plot saved to {weight_plot_file_dir}')
-print('\n')
+print('Calculating Unit Importance For Each Label')
+importance_result_dir = os.path.join(result_dir, 'importance')
+os.makedirs(importance_result_dir, exist_ok=True)

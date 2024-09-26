@@ -329,3 +329,55 @@ def read_meme(meme_file):
         motif_names = np.stack(motif_names)
 
     return motifs, motif_names
+
+def plot_filter_weight(weight_df, dir_save_plot):
+    num_cnns = weight_df.shape[1]  # Assuming number of columns represents CNNs
+    
+    # Loop through each row to create a separate plot
+    for index, row in weight_df.iterrows():
+        # Sort the row in descending order by weight values
+        sorted_row = row.sort_values(ascending=False)
+
+        # Extract labels (column names, now sorted) and values (sorted weights)
+        labels = sorted_row.index
+        values = sorted_row.values
+
+        # Calculate min and max values for the x-axis range
+        min_value = values.min()
+        max_value = values.max()
+
+        # Define colors for the bars based on a condition (customize as needed)
+        colors = ['royalblue' if '-' not in label.lower() else 'red' for label in labels]
+
+        # Create a new figure for each row
+        plt.figure(figsize=(8, math.ceil(0.15 * num_cnns)))
+
+        # Plot the bar chart for this row
+        plt.barh(labels, values, color=colors)
+        plt.title(f'Weights for Target: {index}')
+        plt.xlabel('Weight')
+        plt.ylabel('Filters')
+
+        # Invert y-axis to have the highest value at the top
+        plt.gca().invert_yaxis()
+
+        # Set x-axis limits
+        plt.xlim(min_value - 0.05, max_value + 0.05)
+
+        # Annotate the value next to each bar
+        for i, (label, value) in enumerate(zip(labels, values)):
+            if value >= 0:
+                plt.text(value, i, f'{value:.3f}', va='center', ha='left', fontsize=10)
+            else:
+                plt.text(value, i, f'{value:.3f}', va='center', ha='right', fontsize=10)
+
+        # Adjust layout to prevent overlap
+        plt.tight_layout()
+
+        # Save the individual plot to the specified directory
+        plot_filename = f'{dir_save_plot}/filter_weights_{index}.png'
+        plt.savefig(plot_filename)
+        print(f'Saved plot for {index} at {plot_filename}')
+
+        # Close the plot after saving to free up memory
+        plt.close()
