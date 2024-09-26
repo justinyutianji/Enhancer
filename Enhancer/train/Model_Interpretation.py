@@ -18,6 +18,7 @@ import tools
 import logomaker
 import os
 import pickle
+import shutil
 
 sys.path.append('../../Enhancer')  
 from model.model import ConvNetDeep, DanQ, ExplaiNN,ConvNetDeep2, ExplaiNN2, ExplaiNN3
@@ -36,7 +37,7 @@ save_cutoff_plot = True
 meme_package_dir = '/pmglocal/ty2514/meme'
 jaspar_meme_file_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/databases/jaspar2024/JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_meme.meme'
 tomtom_result_dir = os.path.join(result_dir, 'tomtom_results')
-
+target_labels = ['GFP+','GFP-']
 # Update the PATH environment variable
 os.environ['PATH'] = os.path.join(meme_package_dir, 'bin') + ':' + os.path.join(meme_package_dir, 'libexec', 'meme-5.5.5') + ':' + os.environ['PATH']
 # Check if 'tomtom' is in the PATH using 'which tomtom'
@@ -47,18 +48,16 @@ except subprocess.CalledProcessError:
     print("Error: 'tomtom' not found in the PATH.")
     sys.exit(1)  # Stop further execution if tomtom is not found
 
-# Create the tomtom_output directory if it doesn't exist
-os.makedirs(tomtom_result_dir, exist_ok=True)
-
 print('--------------------------------------------------------')
 print('***********************   1/5   ************************')
 print('--------------------------------------------------------')
 print('Attaching device to the gpu')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-explainn = ExplaiNN3(num_cnns = num_cnns, input_length = 608, num_classes = 2, 
-                 filter_size = filter_size, num_fc=2, pool_size=7, pool_stride=7, 
-                 drop_out = 0.3, weight_path = None)# Training
-explainn.to(device)  
+
+# Initialize the model without moving it to the device yet
+explainn = ExplaiNN3(num_cnns=num_cnns, input_length=608, num_classes=2,
+                     filter_size=filter_size, num_fc=2, pool_size=7, pool_stride=7,
+                     drop_out=0.3, weight_path=None)  # Training
 
 file_list = glob.glob(f'{result_dir}/best_r2*.pth')
 print('Loading weight from following weight file to the model: ')
@@ -68,10 +67,21 @@ if len(file_list) > 0:
     weight_file = file_list[0]
 else:
     raise FileExistsError("Best r2 Model file not exist")
+
 print('\n')
-explainn.load_state_dict(torch.load(weight_file))
+# Load the model weights conditionally based on GPU availability
+if torch.cuda.is_available():
+    explainn.load_state_dict(torch.load(weight_file))
+    print('explainn loaded on GPU')
+else:
+    explainn.load_state_dict(torch.load(weight_file, map_location=torch.device('cpu')))
+    print('explainn loaded on CPU')
+
+# Move the model to the appropriate device after loading the weights
+explainn.to(device)
 explainn.eval()
 print('\n')
+
 
 print('--------------------------------------------------------')
 print('***********************   2/5   ************************')
@@ -209,6 +219,15 @@ print('***********************   5/5   ************************')
 print('--------------------------------------------------------')
 print('Running tomtom comparison!')
 
+# Check if the output directory exists
+if os.path.exists(tomtom_result_dir):
+    # Optionally delete the existing directory
+    shutil.rmtree(tomtom_result_dir)
+    print(f"Deleted existing directory: {tomtom_result_dir}")
+
+# Create a new directory if needed
+os.makedirs(tomtom_result_dir)
+
 # Command to run tomtom
 tomtom_command = [
         'tomtom', pwm_meme_file_dir, jaspar_meme_file_dir, 
@@ -263,3 +282,64 @@ print('--------------------------------------------------------')
 print('***********************   7/5   ************************')
 print('--------------------------------------------------------')
 print('Get Weight of Each Filter!')
+weights = explainn.final.weight.detach().cpu().numpy()
+print(f'weight_df has shape: {weights.shape} (number of labels, number of fileters)')
+filters = ["filter"+str(i) for i in range(num_cnns)]
+for i in annotation.keys():
+    filters[int(i.split("filter")[-1])] = annotation[i]
+weight_df = pd.DataFrame(weights, target_labels, columns=filters)
+weight_file_dir = os.path.join(result_dir, 'filter_weights.csv')
+# Save the DataFrame to a CSV file
+weight_df.to_csv(weight_file_dir, index=True)  # Set index=True if you want to save the index
+
+print(f'Weights saved to {weight_file_dir}')
+print('\n')
+
+print('--------------------------------------------------------')
+print('***********************   8/5   ************************')
+print('--------------------------------------------------------')
+print('Plotting weights of different filters')
+weight_plot_file_dir = os.path.join(result_dir, 'filter_weights.png')
+# Assuming weight_df is a DataFrame with multiple rows and 90 columns
+num_rows = len(weight_df.index)  # Number of rows (features or categories)
+
+# Set up a figure with subplots for each row
+fig, axes = plt.subplots(nrows=num_rows, ncols=1, figsize=(math.ceil(0.165 * num_cnns), 6 * num_rows))
+
+# Loop through each row to create a separate plot
+for ax, (index, row) in zip(axes.flatten(), weight_df.iterrows()):
+    # Sort the row in descending order by weight values
+    sorted_row = row.sort_values(ascending=False)
+
+    # Extract labels (column names, now sorted) and values (sorted weights)
+    labels = sorted_row.index
+    values = sorted_row.values
+
+    # Define colors for the bars based on a condition (customize as needed)
+    colors = ['red' if 'filter' not in label.lower() else 'royalblue' for label in labels]
+
+    # Create the bar plot on the specific subplot axis
+    ax.bar(labels, values, color=colors)
+
+    # Label customization
+    ax.set_xlabel('Column Names')
+    ax.set_ylabel('Weight Values')
+    ax.set_title(f'Ranked Weight Distribution for {index}')
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=90)  # Rotate labels to avoid overlap
+
+    # Optionally annotate specific bars (customize as needed)
+    for i, value in enumerate(values):
+        if 'filter' not in labels[i].lower():
+            ax.text(i, value, f'{value:.2f}', ha='center', va='bottom', color='darkred',fontsize = 6)
+
+# Adjust layout to prevent overlap
+fig.tight_layout()
+
+# Save the plot to the specified file path
+plt.savefig(weight_plot_file_dir, bbox_inches='tight')  # bbox_inches='tight' helps to fit the layout
+
+# Optionally close the figure if you don't want to keep it in memory
+plt.close(fig)
+print(f'Weight Plot saved to {weight_plot_file_dir}')
+print('\n')
