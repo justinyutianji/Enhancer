@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from utils import EnhancerDataset, find_tsv_file_path
-from tools import plot_filter_weight
+from tools import plot_filter_weight,plot_unit_importance
 import numpy as np
 import pandas as pd
 import subprocess
@@ -13,6 +13,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 import interpretation
 import seaborn as sns
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import glob
 import tools
 import logomaker
@@ -39,6 +40,7 @@ jaspar_meme_file_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/databases/jas
 tf_cluster_db_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/JASPAR2024_mus_musculus_non-redundant_results/metadata.tsv'
 tomtom_result_dir = os.path.join(result_dir, 'tomtom_results')
 target_labels = ['GFP+','GFP-']
+feature_list= ['G+','G-']
 # Update the PATH environment variable
 os.environ['PATH'] = os.path.join(meme_package_dir, 'bin') + ':' + os.path.join(meme_package_dir, 'libexec', 'meme-5.5.5') + ':' + os.environ['PATH']
 # Check if 'tomtom' is in the PATH using 'which tomtom'
@@ -50,7 +52,7 @@ except subprocess.CalledProcessError:
     sys.exit(1)  # Stop further execution if tomtom is not found
 
 print('--------------------------------------------------------')
-print('***********************   1/5   ************************')
+print('***********************   1/8   ************************')
 print('--------------------------------------------------------')
 print('Attaching device to the gpu')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -85,7 +87,7 @@ print('\n')
 
 
 print('--------------------------------------------------------')
-print('***********************   2/5   ************************')
+print('***********************   2/8   ************************')
 print('--------------------------------------------------------')
 print('Reading input data for retreiving predictions')
 # Load dataset as a pandas dataframe
@@ -93,7 +95,7 @@ df = pd.read_csv(input_data_dir)
 # Prepare features and labels:
 # --(Features): Transform all sequences into one-hot encodings
 # --(Labels): Use GFP+ and GFP- as labels
-dataset = EnhancerDataset(df, feature_list=['G+','G-'], scale_mode = 'none')
+dataset = EnhancerDataset(df, feature_list=feature_list, scale_mode = 'none')
 # Prepare dataloader
 dataset = DataLoader(dataset=dataset, batch_size=batch, shuffle=False)
 
@@ -104,7 +106,7 @@ print("Get prediction using trained model!")
 """Now filter out low confident predictions"""
 print('\n')
 print('--------------------------------------------------------')
-print('***********************   3/5   ************************')
+print('***********************   3/8   ************************')
 print('--------------------------------------------------------')
 
 print("Now selecting high confident predictions!")
@@ -132,8 +134,6 @@ data_out = torch.cat(data_out, dim=0)
 print(f'Total number of input samples: {len(data_inp)}')
 data_inp = data_inp[mask]
 data_out = data_out[mask]
-print(data_inp.shape)
-print(data_out.shape)
 
 print(f'Number of input samples with high confident prediction: {len(data_inp)}')
 
@@ -175,7 +175,7 @@ if save_cutoff_plot == True:
     print('\n')
 
 print('--------------------------------------------------------')
-print('***********************   4/5   ************************')
+print('***********************   4/8   ************************')
 print('--------------------------------------------------------')
 print('Calculating activations from each layer of the model if not calculated before!')
 # Get weights from activation layer
@@ -216,7 +216,7 @@ pwm_meme_file_dir = os.path.join(result_dir, 'Model_PWM.meme')
 interpretation.pwm_to_meme(pwms, pwm_meme_file_dir)
 
 print('--------------------------------------------------------')
-print('***********************   5/5   ************************')
+print('***********************   5/8   ************************')
 print('--------------------------------------------------------')
 print('Running tomtom comparison!')
 
@@ -225,9 +225,6 @@ if os.path.exists(tomtom_result_dir):
     # Optionally delete the existing directory
     shutil.rmtree(tomtom_result_dir)
     print(f"Deleted existing directory: {tomtom_result_dir}")
-
-# Create a new directory if needed
-os.makedirs(tomtom_result_dir)
 
 # Command to run tomtom
 tomtom_command = [
@@ -245,7 +242,7 @@ except subprocess.CalledProcessError as e:
 print('\n')
 
 print('--------------------------------------------------------')
-print('***********************   6/5   ************************')
+print('***********************   6/8   ************************')
 print('--------------------------------------------------------')
 print('Annotate Each Filter!')
 # Annotate filter by filter -> jasper TF -> TF cluster
@@ -295,7 +292,7 @@ os.makedirs(weights_dir, exist_ok = True)
 annotation_df.to_csv(os.path.join(weights_dir,'filter_annotation.csv'), index=False)
 
 print('--------------------------------------------------------')
-print('***********************   7/5   ************************')
+print('***********************   7/8   ************************')
 print('--------------------------------------------------------')
 print('Get Weight of Each Filter!')
 weights = explainn.final.weight.detach().cpu().numpy()
@@ -328,8 +325,47 @@ annotated_weight_df = weight_df.loc[:, weight_df.columns.str.contains('-')]
 plot_filter_weight(annotated_weight_df, weights_dir)
 
 print('--------------------------------------------------------')
-print('***********************   8/5   ************************')
+print('***********************   8/8   ************************')
 print('--------------------------------------------------------')
 print('Calculating Unit Importance For Each Label')
 importance_result_dir = os.path.join(result_dir, 'importance')
 os.makedirs(importance_result_dir, exist_ok=True)
+importance_dictionary_file = os.path.join(importance_result_dir, 'importance_dict.pkl')
+
+# Check if the file exists
+if os.path.exists(importance_dictionary_file):
+    with open(importance_dictionary_file, 'rb') as f:
+        importance_dict = pickle.load(f)
+    print(f"Importance dictionary already exists. Loaded the importance dictionary from {importance_dict}.")
+else:
+    importance_dict = {}
+    for label in target_labels:
+        importance_dict[label] = []
+    # Use tqdm to track progress over the loop
+    for unit_index in tqdm(range(num_cnns), desc="Processing units"):
+        # Calculate unit importance for the current unit
+        unit_outputs = interpretation.get_explainn_unit_outputs(data_loader, explainn, device)
+        importance = interpretation.get_specific_unit_importance(activations, explainn, unit_outputs, unit_index, target_labels)
+
+        # Store the importance for each label
+        for label in target_labels:
+            importance_dict[label].append(importance[label])
+
+    with open(importance_dictionary_file, 'wb') as f:
+        pickle.dump(importance_dict, f)
+
+print(f'Importance dictionary saved to {importance_dictionary_file}')
+print('\n')
+print('Plotting Unit Importance Plot')
+unit_names = list(weight_df.columns)
+for label in target_labels:
+    _ = plot_unit_importance(importance_dict[label], unit_names, label, dir_save_plot = importance_result_dir, annotated_filter_only=True, num_tf_plotted=10)
+    sorted_filters = plot_unit_importance(importance_dict[label], unit_names, label, dir_save_plot = importance_result_dir, annotated_filter_only=False, num_tf_plotted=False)
+    # Save sorted_names to a plain text file
+    sorted_tf_order_file = os.path.join(importance_result_dir, f'{label}_sorted_tf_order.txt')
+    with open(sorted_tf_order_file, 'w') as f:
+        for name in sorted_filters:
+            f.write(f"{name}\n")
+
+print('Finish!')
+

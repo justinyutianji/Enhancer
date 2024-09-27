@@ -44,7 +44,7 @@ except subprocess.CalledProcessError:
     sys.exit(1)  # Stop further execution if tomtom is not found
 
 # If 'tomtom' is found, define directories and run the tomtom command
-pwm_meme_file_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/databases/jaspar2024/JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_meme.meme'  # Replace with the actual path to the PWM MEME file
+pwm_meme_file_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_both_results/Model_PWM.meme'  # Replace with the actual path to the PWM MEME file
 jaspar_meme_file_dir = '/pmglocal/ty2514/Enhancer/motif-clustering/databases/jaspar2024/JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_meme.meme'
 result_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_both_results'
 tomtom_result_dir = os.path.join(result_dir, 'tomtom_results')

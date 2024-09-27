@@ -30,20 +30,25 @@ def extract_pwm_from_meme(meme_file, motif_name):
             if line.startswith('letter-probability matrix:'):
                 continue  # Skip the header line
             
-            if line.startswith('MOTIF'):
-                break  # Stop reading at the next motif
+            # Stop reading if we encounter the next motif or unrelated content
+            if line.startswith('MOTIF') or line.startswith('URL'):
+                break  # Stop reading at the next motif or URL
             
-            if line:  # If the line is not empty
+            # Parse the PWM row, ensuring only numeric rows are processed
+            try:
                 pwm_row = list(map(float, line.split()))
                 pwm.append(pwm_row)
+            except ValueError:
+                continue  # Skip lines that cannot be converted to float
     
     if pwm:
         print(f"PWM for {motif_name} has length: {len(pwm)}")
         return pwm  # Return the PWM matrix
     else:
-        print("Motif not found.")
+        print(f"Motif {motif_name} not found.")
     
     return None  # Return None if the motif is not found
+
 
 def generate_random_dna(length):
     """Generate a random DNA sequence of specified length."""

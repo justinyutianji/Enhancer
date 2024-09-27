@@ -7,6 +7,7 @@ import h5py
 from tqdm import tqdm
 import torch.nn as nn
 import matplotlib.pyplot as plt
+import math
 
 # =============================================================================
 # FUNCTIONS
@@ -377,7 +378,77 @@ def plot_filter_weight(weight_df, dir_save_plot):
         # Save the individual plot to the specified directory
         plot_filename = f'{dir_save_plot}/filter_weights_{index}.png'
         plt.savefig(plot_filename)
-        print(f'Saved plot for {index} at {plot_filename}')
+        print(f'Saved weight plot for {index} at {plot_filename}')
 
         # Close the plot after saving to free up memory
         plt.close()
+
+def plot_unit_importance(unit_importance_values, unit_names, title_suffix, dir_save_plot, annotated_filter_only=False, num_tf_plotted=False):
+    num_cnns = len(unit_importance_values)  # Use the length of unit importance values for dynamic plotting
+    if num_tf_plotted and isinstance(num_tf_plotted, int):
+        plt.figure(figsize=(8, math.ceil(0.4 * num_tf_plotted)))
+    else:
+        plt.figure(figsize=(8, math.ceil(0.2 * num_cnns)))
+
+    # Calculate the means of each list in unit_importance_values
+    means = [np.mean(values) for values in unit_importance_values]
+
+    # Create tuples of means, unit names, and values, then sort them by means
+    sorted_data = sorted(zip(means, unit_names, unit_importance_values), key=lambda x: x[0], reverse=True)
+
+    # Unzip the sorted data
+    sorted_means, sorted_names, sorted_values = zip(*sorted_data)
+
+    # Filter if annotated_filter_only is True
+    if annotated_filter_only:
+        filtered_data = [(mean, name, values) for mean, name, values in zip(sorted_means, sorted_names, sorted_values) if '-' in name]
+        if filtered_data:
+            sorted_means, sorted_names, sorted_values = zip(*filtered_data)
+            plt.figure(figsize=(8, math.ceil(0.15 * len(sorted_means))))
+        else:
+            sorted_means, sorted_names, sorted_values = [], [], []
+
+    # Limit the number of samples plotted if num_tf_plotted is provided and not False
+    if num_tf_plotted and isinstance(num_tf_plotted, int):
+        sorted_means = sorted_means[:num_tf_plotted]
+        sorted_names = sorted_names[:num_tf_plotted]
+        sorted_values = sorted_values[:num_tf_plotted]
+
+    # Define properties for outliers (fliers)
+    flierprops = dict(marker='o', color='black', markersize=1)
+
+    # Create box plots individually to control colors
+    box_width = 0.6  # Set box width
+    for i, (name, data) in enumerate(zip(sorted_names, sorted_values)):
+        color = "#ff9999" if "-" not in name.lower() else "#228833"
+        plt.boxplot(data, positions=[i + 1], widths=box_width, notch=True, patch_artist=True, vert=False,
+                    boxprops=dict(facecolor=color, color=color), flierprops=flierprops)
+
+    # Set custom sorted y-axis labels
+    plt.gca().set_yticks(range(1, len(sorted_names) + 1))  # Setting y-ticks
+    plt.gca().set_yticklabels(sorted_names, rotation=0)  # Setting y-tick labels
+
+    # Invert the y-axis so the largest mean is on top
+    plt.gca().invert_yaxis()
+
+    # Set title and axis labels
+    plt.title(f"Unit Importance of Each Filter on Predicting {title_suffix}")
+    plt.xlabel("Importance Values")
+    
+    # Adjust layout and show plot
+    plt.tight_layout()
+    
+    if annotated_filter_only and num_tf_plotted and isinstance(num_tf_plotted, int):
+        plot_filename = f'{dir_save_plot}/top{num_tf_plotted}_annotated_filter_unit_importance_{title_suffix}.png'
+    elif annotated_filter_only and num_tf_plotted == False:
+        plot_filename = f'{dir_save_plot}/annotated_filter_unit_importance_{title_suffix}.png'
+    elif annotated_filter_only == False and num_tf_plotted and isinstance(num_tf_plotted, int):
+        plot_filename = f'{dir_save_plot}/top{num_tf_plotted}_filter_unit_importance_{title_suffix}.png'
+    else:
+        plot_filename = f'{dir_save_plot}/filter_unit_importance_{title_suffix}.png'
+
+
+    plt.savefig(plot_filename)
+    print(f'Saved unit importance plot for {title_suffix} at {plot_filename}')
+    plt.close()
+    return list(sorted_names)
