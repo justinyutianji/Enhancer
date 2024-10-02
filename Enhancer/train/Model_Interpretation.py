@@ -73,12 +73,19 @@ else:
 
 print('\n')
 # Load the model weights conditionally based on GPU availability
-if torch.cuda.is_available():
-    explainn.load_state_dict(torch.load(weight_file))
-    print('explainn loaded on GPU')
-else:
-    explainn.load_state_dict(torch.load(weight_file, map_location=torch.device('cpu')))
-    print('explainn loaded on CPU')
+state_dict = torch.load(weight_file, map_location=device)  # Load to the appropriate device
+
+# Check if the state_dict contains keys prefixed with 'module.'
+if any(key.startswith('module.') for key in state_dict.keys()):
+    # If the state_dict was saved from a DataParallel model, remove the 'module.' prefix
+    new_state_dict = {}
+    for key, value in state_dict.items():
+        new_key = key.replace('module.', '')  # Remove 'module.' prefix
+        new_state_dict[new_key] = value
+    state_dict = new_state_dict
+
+# Load the modified state_dict into the model
+explainn.load_state_dict(state_dict)
 
 # Move the model to the appropriate device after loading the weights
 explainn.to(device)

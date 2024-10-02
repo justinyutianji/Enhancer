@@ -11,11 +11,11 @@ from torch.optim import Adam
 from sklearn.model_selection import train_test_split
 import pickle
 import os
-import math
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, auc, precision_recall_curve, average_precision_score,mean_squared_error, r2_score, mean_absolute_error
 from scipy.stats import ks_2samp, pearsonr, spearmanr
 import random
+from matplotlib import rcParams
 import glob
 
 def process_data(fasta_dir, frag_seq_dir, stan_values_dir, save_df):
@@ -608,367 +608,147 @@ def evaluate_regression_model(model, test_loader, device):
     
     return metrics
 
-def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses_by_batch, device, results, label_mode = "G+", save_plot = False, dir_path = None, model_path = None, best_model = -1):
+def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses_by_batch, device, results, target_labels, save_plot=False, dir_path=None, model_path=None):
+    rcParams['font.family'] = 'Arial'
+    rcParams['font.size'] = 12
     # Directory setup
-    if save_plot == True:
+    if save_plot:
         os.makedirs(dir_path, exist_ok=True)
         with open(f'{dir_path}/best_results.pkl', 'wb') as f:
             pickle.dump(results, f)
-    if model_path != None:
+    if model_path is not None:
         model.load_state_dict(torch.load(model_path))
     model.eval()
-    if label_mode == "G+" or label_mode == "G-" or label_mode == 'score' or label_mode == 'GFP':
-        actuals = []
-        predictions = []
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs = inputs.to(device)
-                outputs = model(inputs).cpu().numpy().flatten()
-                predictions.extend(outputs)
-                actuals.extend(labels.cpu().numpy().flatten())
-        
-        # Convert to numpy arrays for easier manipulation
-        predictions = np.array(predictions)
-        actuals = np.array(actuals)
-    elif label_mode == "both":
-        actuals_g_plus = []
-        actuals_g_minus = []
-        predictions_g_plus = []
-        predictions_g_minus = [] 
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs = inputs.to(device)
-                outputs = model(inputs).cpu().numpy()
-                
-                # Separate the predictions for G+ and G-
-                predictions_g_plus.extend(outputs[:, 0])
-                predictions_g_minus.extend(outputs[:, 1])
-                
-                # Separate the actuals for G+ and G-
-                actuals_g_plus.extend(labels.cpu().numpy()[:, 0])
-                actuals_g_minus.extend(labels.cpu().numpy()[:, 1])
-        
-        # Convert lists to numpy arrays for easier manipulation
-        predictions_g_plus = np.array(predictions_g_plus)
-        predictions_g_minus = np.array(predictions_g_minus)
-        actuals_g_plus = np.array(actuals_g_plus)
-        actuals_g_minus = np.array(actuals_g_minus)
-    elif label_mode == "distance":
-        actuals_g_plus = []
-        actuals_g_minus = []
-        actuals_dist = []
-        predictions_g_plus = []
-        predictions_g_minus = [] 
-        predictions_dist = []
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs = inputs.to(device)
-                outputs = model(inputs).cpu().numpy()
-                
-                # Separate the predictions for G+ and G-
-                predictions_g_plus.extend(outputs[:, 0])
-                predictions_g_minus.extend(outputs[:, 1])
-                predictions_dist.extend(outputs[:,2])
-                
-                # Separate the actuals for G+ and G-
-                actuals_g_plus.extend(labels.cpu().numpy()[:, 0])
-                actuals_g_minus.extend(labels.cpu().numpy()[:, 1])
-                actuals_dist.extend(labels.cpu().numpy()[:, 2])
-        
-        # Convert lists to numpy arrays for easier manipulation
-        predictions_g_plus = np.array(predictions_g_plus)
-        predictions_g_minus = np.array(predictions_g_minus)
-        predictions_dist = np.array(predictions_dist)
-        actuals_g_plus = np.array(actuals_g_plus)
-        actuals_g_minus = np.array(actuals_g_minus)
-        actuals_dist = np.array(actuals_dist)
-    else:
-        TypeError("label_mode needs to be G+, G-, score, GFP, both, or distance")
 
-    # If we want to include the first epoch's loss and start ticks from 1
-    #epochs = range(2, len(train_losses_by_batch) + 1)
-    #ticks = range(2, len(test_losses_by_batch) + 1, 10)
+    actual_value_dict = {target: [] for target in target_labels}  # Initialize dictionaries
+    predict_value_dict = {target: [] for target in target_labels}
+    
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs = inputs.to(device)
+            outputs = model(inputs).cpu().numpy()  # Get predictions
+            
+            for i in range(len(target_labels)):
+                target = target_labels[i]
+                
+                # For single target case, flatten the outputs and labels
+                if len(target_labels) == 1:
+                    predictions = outputs.flatten()
+                    actuals = labels.cpu().numpy().flatten()
+                else:
+                    predictions = outputs[:, i]
+                    actuals = labels.cpu().numpy()[:, i]
+                
+                # Append predictions and actuals to the corresponding target lists
+                actual_value_dict[target].extend(actuals)
+                predict_value_dict[target].extend(predictions)
 
-    ############Plot1############
-    # Plotting train_losses and test_losses
-    plt.figure(figsize=(10, 5))
-    #plt.plot(epochs, train_losses_by_batch[1:], label='Training Loss')
-    #plt.plot(epochs, test_losses_by_batch[1:], label='Testing Loss')
+    # Convert lists to numpy arrays for easier processing later
+    for key in actual_value_dict:
+        actual_value_dict[key] = np.array(actual_value_dict[key])
+        predict_value_dict[key] = np.array(predict_value_dict[key])
+
+    # Data storage for Excel file
+    data_for_excel = {}
+
+    # Plot 1: Training and Testing Loss Over Epochs
+    plt.figure(figsize=(6, 6))
     plt.plot(train_losses_by_batch, label='Training Loss')
     plt.plot(test_losses_by_batch, label='Testing Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Testing Loss Over Epochs')
+    plt.xlabel('Epoch', fontsize=12)
+    plt.ylabel('Loss', fontsize=12)
+    plt.title('Training and Testing Loss Over Epochs', fontsize=14)
     plt.legend()
-    #plt.xticks(ticks)
-    if save_plot == True:
+    if save_plot:
         plt.savefig(os.path.join(dir_path, 'training_testing_loss_by_batch.png'))
     plt.show()
 
-    ############Plot2############
-    if label_mode == "G+" or label_mode == "G-" or label_mode == 'score' or label_mode == 'GFP':
-        # Plotting predictions vs actuals
-        plt.figure(figsize=(10, 5))
-        plt.scatter(actuals, predictions, alpha=0.5, s= 2)
-        plt.xlabel('Actual Values')
-        plt.ylabel('Predictions')
-        plt.title('Predictions vs. Actuals')
-        plt.plot([actuals.min(), actuals.max()], [actuals.min(), actuals.max()], 'k--', lw=2)  # Diagonal line
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-        plt.show()
+    # Store the data for plot 1 into a dictionary
+    data_for_excel['Training and Testing Loss'] = pd.DataFrame({
+        'Training Loss': train_losses_by_batch,
+        'Testing Loss': test_losses_by_batch
+    })
 
-        ############Plot3############
-        # Plotting bar plots of true and predicted values
-        # Perform K-S test
-        stat, p_value = ks_2samp(actuals, predictions)
+    # Plot 2: Predictions vs Actuals
+    num_targets = len(target_labels)
+    fig, axs = plt.subplots(1, num_targets, figsize=(num_targets * 6, 6))
 
-        # Create the box plot
-        plt.figure(figsize=(8, 6))
-        plt.boxplot([actuals, predictions], labels=['Actual Values', 'Predicted Values'],flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        plt.title('Comparison of Actual and Predicted Values')
-        plt.ylabel('Value')
+    # Ensure axs is always iterable (in case of single plot)
+    if num_targets == 1:
+        axs = [axs]
 
-        # Annotate with the K-S test results
-        x1, x2 = 1, 2  # Columns numbers on your plot
-        y, h, col = max(max(actuals), max(predictions)) + 1, 1, 'k'  # y is the height, h is the height of the line, col is the color
-        plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-        plt.text((x1+x2)*.5, y+h, f'p-value = {p_value:.3e}', ha='center', va='bottom', color=col)
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_bar_plot.png'))
-        plt.show()
+    for i in range(num_targets):
+        label = target_labels[i]
+        actual_list = actual_value_dict[label]
+        prediction_list = predict_value_dict[label]
+        axs[i].scatter(actual_list, prediction_list, alpha=0.5, s=2)
+        axs[i].set_xlabel(f'Actual {label} Values', fontsize=12)
+        axs[i].set_ylabel(f'Predicted {label} Values', fontsize=12)
+        axs[i].set_title(f'{label} Predictions vs. Actuals', fontsize=14)
+        axs[i].plot([actual_list.min(), actual_list.max()], [actual_list.min(), actual_list.max()], 'k--', lw=2)  # Diagonal line
 
-        ############Plot4############
-        # Histogram of true and predicted values
-        bins = np.histogram_bin_edges(predictions, bins=100)
+    if save_plot:
+        plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
+    plt.show()
 
-        # Plot the histograms using the same bins
-        plt.figure(figsize=(10, 5))
-        plt.hist(actuals, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual Values')
-        plt.hist(predictions, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted Values')
-        plt.xlabel('Value')
-        plt.ylabel('Frequency')
-        plt.title('Histogram of Actual and Predicted Values')
-        x_min = math.floor(min(predictions.min(), actuals.min()))
-        x_max = math.ceil(max(predictions.max(), actuals.max()))
-        plt.xlim(x_min, x_max)
-        plt.legend()
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_histogram.png'))
-        plt.show()
-    elif label_mode == "both":
-        """When label_mode is both, output would be G+ and G-"""
-        ############Plot2############
-        # Plotting predictions vs actuals
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+    # Store the data for plot 2 into a dictionary
+    for label in target_labels:
+        data_for_excel[f'{label} Predictions vs Actuals'] = pd.DataFrame({
+            f'Actual {label}': actual_value_dict[label],
+            f'Predicted {label}': predict_value_dict[label]
+        })
 
-        # Subplot for G+ predictions vs actuals
-        axs[0].scatter(actuals_g_plus, predictions_g_plus, alpha=0.5, s=2, label='G+')
-        axs[0].set_xlabel('Actual G+ Values')
-        axs[0].set_ylabel('Predicted G+ Values')
-        axs[0].set_title('G+ Predictions vs. Actuals')
-        axs[0].plot([actuals_g_plus.min(), actuals_g_plus.max()], [actuals_g_plus.min(), actuals_g_plus.max()], 'k--', lw=2)  # Diagonal line
-        axs[0].legend()
+    # Plot 3: Histograms of Actual and Predicted Values
+    fig, axs = plt.subplots(1, num_targets, figsize=(num_targets * 6, 6))
 
-        # Subplot for G- predictions vs actuals
-        axs[1].scatter(actuals_g_minus, predictions_g_minus, alpha=0.5, s=2, color='red', label='G-')
-        axs[1].set_xlabel('Actual G- Values')
-        axs[1].set_ylabel('Predicted G- Values')
-        axs[1].set_title('G- Predictions vs. Actuals')
-        axs[1].plot([actuals_g_minus.min(), actuals_g_minus.max()], [actuals_g_minus.min(), actuals_g_minus.max()], 'k--', lw=2)  # Diagonal line
-        axs[1].legend()
+    # Ensure axs is always iterable (in case of single plot)
+    if num_targets == 1:
+        axs = [axs]
 
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-        plt.show()
+    for i in range(num_targets):
+        label = target_labels[i]
+        actual_list = actual_value_dict[label]
+        prediction_list = predict_value_dict[label]
 
-        ############Plot3############
-        # Plotting bar plots of true and predicted values
-        
-        # Perform K-S test
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-        stat_g_plus, p_value_g_plus = ks_2samp(actuals_g_plus, predictions_g_plus)
-        stat_g_minus, p_value_g_minus = ks_2samp(actuals_g_minus, predictions_g_minus)
+        bins = np.histogram_bin_edges(actual_list, bins=50)
+        axs[i].hist(actual_list, bins=bins, alpha=0.7, color='red', edgecolor='black', label=f'Actual {label}')
+        axs[i].hist(prediction_list, bins=bins, alpha=0.5, color='green', edgecolor='black', label=f'Predicted {label}')
+        axs[i].set_xlabel('Value', fontsize=12)
+        axs[i].set_ylabel('Frequency', fontsize=12)
+        axs[i].set_title(f'Histogram of Actual and Predicted {label} Values', fontsize=14)
+        axs[i].legend()
 
-        # Box plot for G+
-        axs[0].boxplot([actuals_g_plus, predictions_g_plus], labels=['Actual G+', 'Predicted G+'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[0].set_title('Comparison of Actual and Predicted G+ Values')
-        axs[0].set_ylabel('Value')
-        # Annotate with the K-S test results for G+
-        y = max(max(actuals_g_plus), max(predictions_g_plus)) + 1
-        axs[0].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[0].text(1.5, y+1, f'p-value = {p_value_g_plus:.3e}', ha='center', va='bottom', color='k')
+    if save_plot:
+        plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Histogram.png'))
+    plt.show()
 
-        # Box plot for G-
-        axs[1].boxplot([actuals_g_minus, predictions_g_minus], labels=['Actual G-', 'Predicted G-'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[1].set_title('Comparison of Actual and Predicted G- Values')
-        axs[1].set_ylabel('Value')
-        # Annotate with the K-S test results for G-
-        y = max(max(actuals_g_minus), max(predictions_g_minus)) + 1
-        axs[1].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[1].text(1.5, y+1, f'p-value = {p_value_g_minus:.3e}', ha='center', va='bottom', color='k')
+    # Store the data for plot 3 into a dictionary
+    for label in target_labels:
+        data_for_excel[f'Histogram of {label}'] = pd.DataFrame({
+            f'Actual {label}': actual_value_dict[label],
+            f'Predicted {label}': predict_value_dict[label]
+        })
 
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_box_plot.png'))
-        plt.show()
-
-        ############Plot4############
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-
-        # Histogram for G+
-        bins = np.histogram_bin_edges(actuals_g_plus, bins=50)
-        axs[0].hist(actuals_g_plus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G+')
-        axs[0].hist(predictions_g_plus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G+')
-        axs[0].set_xlabel('Value')
-        axs[0].set_ylabel('Frequency')
-        axs[0].set_title('Histogram of Actual and Predicted G+ Values')
-        axs[0].legend()
-
-        # Histogram for G-
-        bins = np.histogram_bin_edges(actuals_g_minus, bins=50)
-        axs[1].hist(actuals_g_minus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G-')
-        axs[1].hist(predictions_g_minus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G-')
-        axs[1].set_xlabel('Value')
-        axs[1].set_ylabel('Frequency')
-        axs[1].set_title('Histogram of Actual and Predicted G- Values')
-        axs[1].legend()
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_histogram.png'))
-        plt.show()
-    elif label_mode == "distance":
-        """When label_mode is distance, output would be G+, G-, and motif distance score"""
-        ############Plot2############
-        # Plotting predictions vs actuals
-        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-
-        # Subplot for G+ predictions vs actuals
-        axs[0].scatter(actuals_g_plus, predictions_g_plus, alpha=0.5, s=2, label='G+')
-        axs[0].set_xlabel('Actual G+ Values')
-        axs[0].set_ylabel('Predicted G+ Values')
-        axs[0].set_title('G+ Predictions vs. Actuals')
-        axs[0].plot([actuals_g_plus.min(), actuals_g_plus.max()], [actuals_g_plus.min(), actuals_g_plus.max()], 'k--', lw=2)  # Diagonal line
-        axs[0].legend()
-
-        # Subplot for G- predictions vs actuals
-        axs[1].scatter(actuals_g_minus, predictions_g_minus, alpha=0.5, s=2, color='red', label='G-')
-        axs[1].set_xlabel('Actual G- Values')
-        axs[1].set_ylabel('Predicted G- Values')
-        axs[1].set_title('G- Predictions vs. Actuals')
-        axs[1].plot([actuals_g_minus.min(), actuals_g_minus.max()], [actuals_g_minus.min(), actuals_g_minus.max()], 'k--', lw=2)  # Diagonal line
-        axs[1].legend()
-
-        # Subplot for distance predictions vs actuals
-        axs[2].scatter(actuals_dist, predictions_dist, alpha=0.5, s=2, color='green', label='G-')
-        axs[2].set_xlabel('Actual Motif Distance Score')
-        axs[2].set_ylabel('Predicted Motif Distance Score')
-        axs[2].set_title('Motif Distance Score Predictions vs. Actuals')
-        axs[2].plot([predictions_dist.min(), predictions_dist.max()], [predictions_dist.min(), predictions_dist.max()], 'k--', lw=2)  # Diagonal line
-        axs[2].legend()
-
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-        plt.show()
-
-        ############Plot3############
-        # Plotting bar plots of true and predicted values
-        
-        # Perform K-S test
-        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-        stat_g_plus, p_value_g_plus = ks_2samp(actuals_g_plus, predictions_g_plus)
-        stat_g_minus, p_value_g_minus = ks_2samp(actuals_g_minus, predictions_g_minus)
-
-        # Box plot for G+
-        axs[0].boxplot([actuals_g_plus, predictions_g_plus], labels=['Actual G+', 'Predicted G+'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[0].set_title('Comparison of Actual and Predicted G+ Values')
-        axs[0].set_ylabel('Value')
-        # Annotate with the K-S test results for G+
-        y = max(max(actuals_g_plus), max(predictions_g_plus)) + 1
-        axs[0].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[0].text(1.5, y+1, f'p-value = {p_value_g_plus:.3e}', ha='center', va='bottom', color='k')
-
-        # Box plot for G-
-        axs[1].boxplot([actuals_g_minus, predictions_g_minus], labels=['Actual G-', 'Predicted G-'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[1].set_title('Comparison of Actual and Predicted G- Values')
-        axs[1].set_ylabel('Value')
-        # Annotate with the K-S test results for G-
-        y = max(max(actuals_g_minus), max(predictions_g_minus)) + 1
-        axs[1].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[1].text(1.5, y+1, f'p-value = {p_value_g_minus:.3e}', ha='center', va='bottom', color='k')
-
-        # Box plot for Motif Distance Score
-        axs[2].boxplot([actuals_dist, predictions_dist], labels=['Actual Motif Distance Score', 'Predicted Motif Distance Score'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[2].set_title('Comparison of Actual and Predicted Motif Distance Score')
-        axs[2].set_ylabel('Motif Distance Score')
-        # Annotate with the K-S test results for Motif Distance Score
-        y = max(max(actuals_dist), max(predictions_dist)) + 1
-        axs[2].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[2].text(1.5, y+1, f'p-value = {p_value_g_minus:.3e}', ha='center', va='bottom', color='k')
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_and_Motif_Distance_box_plot.png'))
-        plt.show()
-
-        ############Plot4############
-        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-
-        # Histogram for G+
-        bins = np.histogram_bin_edges(actuals_g_plus, bins=50)
-        axs[0].hist(actuals_g_plus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G+')
-        axs[0].hist(predictions_g_plus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G+')
-        axs[0].set_xlabel('Value')
-        axs[0].set_ylabel('Frequency')
-        axs[0].set_title('Histogram of Actual and Predicted G+ Values')
-        axs[0].legend()
-
-        # Histogram for G-
-        bins = np.histogram_bin_edges(actuals_g_minus, bins=50)
-        axs[1].hist(actuals_g_minus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G-')
-        axs[1].hist(predictions_g_minus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G-')
-        axs[1].set_xlabel('Value')
-        axs[1].set_ylabel('Frequency')
-        axs[1].set_title('Histogram of Actual and Predicted G- Values')
-        axs[1].legend()
-
-        # Histogram for Motif Distance Score
-        bins = np.histogram_bin_edges(predictions_dist, bins=50)
-        axs[2].hist(actuals_dist, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual Motif Distance Score')
-        axs[2].hist(predictions_dist, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted Motif Distance Score')
-        axs[2].set_xlabel('Motif Distance Score')
-        axs[2].set_ylabel('Frequency')
-        axs[2].set_title('Histogram of Actual and Predicted Motif Distance Score')
-        # Calculate the min and max values for xlim
-        x_min = 0
-        x_max = max(predictions_dist.max(), actuals_dist.max())
-
-        axs[2].set_xlim(x_min, x_max)
-        axs[2].legend()
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_and_Motif_Distance_histogram.png'))
-        plt.show()
-    else:
-        TypeError("label_mode needs to be G+, G-, both, or distance")
-
+    # Plotting Metrics Over Epochs (MSE, RMSE, MAE, R², Pearson, Spearman)
     for label, metrics in results.items():
         # Plotting MSE, RMSE, MAE
-        fig1, axs1 = plt.subplots(1, 3, figsize=(15, 5))
+        fig1, axs1 = plt.subplots(1, 3, figsize=(18, 6))
         axs1[0].plot(metrics['mse'], label='MSE')
-        axs1[0].set_title(f'Mean Squared Error over Epochs: {label}')
-        axs1[0].set_xlabel('Epoch')
-        axs1[0].set_ylabel('MSE')
+        axs1[0].set_title(f'Mean Squared Error: {label}', fontsize=14)
+        axs1[0].set_xlabel('Epoch', fontsize=12)
+        axs1[0].set_ylabel('MSE', fontsize=12)
         axs1[0].legend()
 
         axs1[1].plot(metrics['rmse'], label='RMSE')
-        axs1[1].set_title(f'Root Mean Squared Error over Epochs: {label}')
-        axs1[1].set_xlabel('Epoch')
-        axs1[1].set_ylabel('RMSE')
+        axs1[1].set_title(f'Root Mean Squared Error: {label}', fontsize=14)
+        axs1[1].set_xlabel('Epoch', fontsize=12)
+        axs1[1].set_ylabel('RMSE', fontsize=12)
         axs1[1].legend()
 
         axs1[2].plot(metrics['mae'], label='MAE')
-        axs1[2].set_title(f'Mean Absolute Error over Epochs: {label}')
-        axs1[2].set_xlabel('Epoch')
-        axs1[2].set_ylabel('MAE')
+        axs1[2].set_title(f'Mean Absolute Error: {label}', fontsize=14)
+        axs1[2].set_xlabel('Epoch', fontsize=12)
+        axs1[2].set_ylabel('MAE', fontsize=12)
         axs1[2].legend()
 
         fig1.tight_layout(pad=3.0)
@@ -976,29 +756,32 @@ def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses
             plt.savefig(os.path.join(dir_path, f'mse_rmse_mae_{label}.png'))
         plt.show()
 
-        # Plotting R^2, Pearson, Spearman
-        # Calculate max ylim for R^2
-        max_r2 = max(metrics['r2'])
-        ylim_r2 = max(max_r2 + 0.1, 1)
+        # Store MSE, RMSE, MAE data for Excel
+        data_for_excel[f'Metrics over Epochs: {label}'] = pd.DataFrame({
+            'Epoch': list(range(len(metrics['mse']))),
+            'MSE': metrics['mse'],
+            'RMSE': metrics['rmse'],
+            'MAE': metrics['mae']
+        })
 
-        fig2, axs2 = plt.subplots(1, 3, figsize=(15, 5))
-        axs2[0].plot(metrics['r2'], label='R^2 Score')
-        axs2[0].set_title(f'R^2 Score over Epochs: {label}')
-        axs2[0].set_xlabel('Epoch')
-        axs2[0].set_ylabel('R^2')
-        axs2[0].set_ylim(0, ylim_r2)
+        # Plotting R², Pearson, and Spearman
+        fig2, axs2 = plt.subplots(1, 3, figsize=(18, 6))
+        axs2[0].plot(metrics['r2'], label='R² Score')
+        axs2[0].set_title(f'R² Score: {label}', fontsize=14)
+        axs2[0].set_xlabel('Epoch', fontsize=12)
+        axs2[0].set_ylabel('R²', fontsize=12)
         axs2[0].legend()
 
         axs2[1].plot(metrics['pearson_corr'], label='Pearson Correlation')
-        axs2[1].set_title(f'Pearson Correlation over Epochs: {label}')
-        axs2[1].set_xlabel('Epoch')
-        axs2[1].set_ylabel('Pearson')
+        axs2[1].set_title(f'Pearson Correlation: {label}', fontsize=14)
+        axs2[1].set_xlabel('Epoch', fontsize=12)
+        axs2[1].set_ylabel('Pearson', fontsize=12)
         axs2[1].legend()
 
         axs2[2].plot(metrics['spearman_corr'], label='Spearman Correlation')
-        axs2[2].set_title(f'Spearman Correlation over Epochs: {label}')
-        axs2[2].set_xlabel('Epoch')
-        axs2[2].set_ylabel('Spearman')
+        axs2[2].set_title(f'Spearman Correlation: {label}', fontsize=14)
+        axs2[2].set_xlabel('Epoch', fontsize=12)
+        axs2[2].set_ylabel('Spearman', fontsize=12)
         axs2[2].legend()
 
         fig2.tight_layout(pad=3.0)
@@ -1006,45 +789,19 @@ def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses
             plt.savefig(os.path.join(dir_path, f'r2_pearson_spearman_{label}.png'))
         plt.show()
 
-    # Plot MSE, RMSE, and MAE for all labels on the same plot
-    fig1, axs1 = plt.subplots(1, 3, figsize=(15, 5))
-    for label, metrics in results.items():
-        axs1[0].plot(metrics['mse'], label=f'{label}')
-        axs1[1].plot(metrics['rmse'], label=f'{label}')
-        axs1[2].plot(metrics['mae'], label=f'{label}')
+        # Store R², Pearson, Spearman data for Excel
+        data_for_excel[f'Correlations over Epochs: {label}'] = pd.DataFrame({
+            'Epoch': list(range(len(metrics['r2']))),
+            'R²': metrics['r2'],
+            'Pearson': metrics['pearson_corr'],
+            'Spearman': metrics['spearman_corr']
+        })
 
-    # Setting titles, labels, and legends for the first plot
-    for ax, metric in zip(axs1, ['MSE', 'RMSE', 'MAE']):
-        ax.set_title(f'{metric} over Epochs')
-        ax.set_xlabel('Epoch')
-        ax.set_ylabel(metric)
-        ax.legend()
-
-    fig1.tight_layout()
+    # Save all the data used for plotting into an Excel file
     if save_plot:
-        fig1.savefig(os.path.join(dir_path, 'all_labels_metrics_plot.png'))
-    plt.show()
-
-    # Plot R^2, Pearson Correlation, and Spearman Correlation for all labels on the same plot
-    fig2, axs2 = plt.subplots(1, 3, figsize=(15, 5))
-    for label, metrics in results.items():
-        axs2[0].plot(metrics['r2'], label=f'{label}')
-        axs2[1].plot(metrics['pearson_corr'], label=f'{label}')
-        axs2[2].plot(metrics['spearman_corr'], label=f'{label}')
-
-    # Setting titles, labels, and legends for the second plot
-    for ax, metric in zip(axs2, ['R^2 Score', 'Pearson Correlation', 'Spearman Correlation']):
-        ax.set_title(f'{metric} over Epochs')
-        ax.set_xlabel('Epoch')
-        ax.set_ylabel(metric)
-        ax.legend()
-        if metric == 'R^2 Score':
-            ax.set_ylim(0, 1)
-    
-    fig2.tight_layout()
-    if save_plot:
-        fig2.savefig(os.path.join(dir_path, 'all_labels_correlations_plot.png'))
-    plt.show()
+        with pd.ExcelWriter(os.path.join(dir_path, 'model_performance_data.xlsx')) as writer:
+            for sheet_name, data in data_for_excel.items():
+                data.to_excel(writer, sheet_name=sheet_name)
 
     return results['total']['mse'][-1], results['total']['rmse'][-1], results['total']['mae'][-1], results['total']['r2'][-1], results['total']['pearson_corr'][-1], results['total']['spearman_corr'][-1]
 
@@ -1105,638 +862,3 @@ def plot_filter_weight(weight_df, top_n=10):
         # Adjust layout and show the plot
         plt.tight_layout()
         plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def regression_model_plot_old(model, test_loader, train_losses_by_batch, test_losses_by_batch, device, results, label_mode = "G+", save_plot = False, dir_path = None, model_path = None, best_model = -1):
-    # Directory setup
-    if save_plot == True:
-        os.makedirs(dir_path, exist_ok=True)
-        with open(f'{dir_path}/results.pkl', 'wb') as f:
-            pickle.dump(results, f)
-    if model_path != None:
-        model.load_state_dict(torch.load(model_path))
-    model.eval()
-    if label_mode == "G+" or label_mode == "G-":
-        actuals = []
-        predictions = []
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs = inputs.to(device)
-                outputs = model(inputs).cpu().numpy().flatten()
-                predictions.extend(outputs)
-                actuals.extend(labels.cpu().numpy().flatten())
-        
-        # Convert to numpy arrays for easier manipulation
-        predictions = np.array(predictions)
-        actuals = np.array(actuals)
-    elif label_mode == "both":
-        actuals_g_plus = []
-        actuals_g_minus = []
-        predictions_g_plus = []
-        predictions_g_minus = [] 
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs = inputs.to(device)
-                outputs = model(inputs).cpu().numpy()
-                
-                # Separate the predictions for G+ and G-
-                predictions_g_plus.extend(outputs[:, 0])
-                predictions_g_minus.extend(outputs[:, 1])
-                
-                # Separate the actuals for G+ and G-
-                actuals_g_plus.extend(labels.cpu().numpy()[:, 0])
-                actuals_g_minus.extend(labels.cpu().numpy()[:, 1])
-        
-        # Convert lists to numpy arrays for easier manipulation
-        predictions_g_plus = np.array(predictions_g_plus)
-        predictions_g_minus = np.array(predictions_g_minus)
-        actuals_g_plus = np.array(actuals_g_plus)
-        actuals_g_minus = np.array(actuals_g_minus)
-    elif label_mode == "distance":
-        actuals_g_plus = []
-        actuals_g_minus = []
-        actuals_dist = []
-        predictions_g_plus = []
-        predictions_g_minus = [] 
-        predictions_dist = []
-        with torch.no_grad():
-            for inputs, labels in test_loader:
-                inputs = inputs.to(device)
-                outputs = model(inputs).cpu().numpy()
-                
-                # Separate the predictions for G+ and G-
-                predictions_g_plus.extend(outputs[:, 0])
-                predictions_g_minus.extend(outputs[:, 1])
-                predictions_dist.extend(outputs[:,2])
-                
-                # Separate the actuals for G+ and G-
-                actuals_g_plus.extend(labels.cpu().numpy()[:, 0])
-                actuals_g_minus.extend(labels.cpu().numpy()[:, 1])
-                actuals_dist.extend(labels.cpu().numpy()[:, 2])
-        
-        # Convert lists to numpy arrays for easier manipulation
-        predictions_g_plus = np.array(predictions_g_plus)
-        predictions_g_minus = np.array(predictions_g_minus)
-        predictions_dist = np.array(predictions_dist)
-        actuals_g_plus = np.array(actuals_g_plus)
-        actuals_g_minus = np.array(actuals_g_minus)
-        actuals_dist = np.array(actuals_dist)
-    else:
-        TypeError("label_mode needs to be G+, G-, both, or distance")
-
-    # If we want to include the first epoch's loss and start ticks from 1
-    #epochs = range(2, len(train_losses_by_batch) + 1)
-    #ticks = range(2, len(test_losses_by_batch) + 1, 10)
-
-    ############Plot1############
-    # Plotting train_losses and test_losses
-    plt.figure(figsize=(10, 5))
-    #plt.plot(epochs, train_losses_by_batch[1:], label='Training Loss')
-    #plt.plot(epochs, test_losses_by_batch[1:], label='Testing Loss')
-    plt.plot(train_losses_by_batch, label='Training Loss')
-    plt.plot(test_losses_by_batch, label='Testing Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Testing Loss Over Epochs')
-    plt.legend()
-    #plt.xticks(ticks)
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'training_testing_loss_by_batch.png'))
-    plt.show()
-
-    ############Plot2############
-    if label_mode == "G+" or label_mode == "G-":
-        # Plotting predictions vs actuals
-        plt.figure(figsize=(10, 5))
-        plt.scatter(actuals, predictions, alpha=0.5, s= 2)
-        plt.xlabel('Actual Values')
-        plt.ylabel('Predictions')
-        plt.title('Predictions vs. Actuals')
-        plt.plot([actuals.min(), actuals.max()], [actuals.min(), actuals.max()], 'k--', lw=2)  # Diagonal line
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-        plt.show()
-
-        ############Plot3############
-        # Plotting bar plots of true and predicted values
-        # Perform K-S test
-        stat, p_value = ks_2samp(actuals, predictions)
-
-        # Create the box plot
-        plt.figure(figsize=(8, 6))
-        plt.boxplot([actuals, predictions], labels=['Actual Values', 'Predicted Values'],flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        plt.title('Comparison of Actual and Predicted Values')
-        plt.ylabel('Value')
-
-        # Annotate with the K-S test results
-        x1, x2 = 1, 2  # Columns numbers on your plot
-        y, h, col = max(max(actuals), max(predictions)) + 1, 1, 'k'  # y is the height, h is the height of the line, col is the color
-        plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-        plt.text((x1+x2)*.5, y+h, f'p-value = {p_value:.3e}', ha='center', va='bottom', color=col)
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_bar_plot.png'))
-        plt.show()
-
-        ############Plot4############
-        # Histogram of true and predicted values
-        bins = np.histogram_bin_edges(actuals, bins=50)
-
-        # Plot the histograms using the same bins
-        plt.figure(figsize=(10, 5))
-        plt.hist(actuals, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual Values')
-        plt.hist(predictions, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted Values')
-        plt.xlabel('Value')
-        plt.ylabel('Frequency')
-        plt.title('Histogram of Actual and Predicted Values')
-        plt.legend()
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_histogram.png'))
-        plt.show()
-    elif label_mode == "both":
-        """When label_mode is both, output would be G+ and G-"""
-        ############Plot2############
-        # Plotting predictions vs actuals
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-
-        # Subplot for G+ predictions vs actuals
-        axs[0].scatter(actuals_g_plus, predictions_g_plus, alpha=0.5, s=2, label='G+')
-        axs[0].set_xlabel('Actual G+ Values')
-        axs[0].set_ylabel('Predicted G+ Values')
-        axs[0].set_title('G+ Predictions vs. Actuals')
-        axs[0].plot([actuals_g_plus.min(), actuals_g_plus.max()], [actuals_g_plus.min(), actuals_g_plus.max()], 'k--', lw=2)  # Diagonal line
-        axs[0].legend()
-
-        # Subplot for G- predictions vs actuals
-        axs[1].scatter(actuals_g_minus, predictions_g_minus, alpha=0.5, s=2, color='red', label='G-')
-        axs[1].set_xlabel('Actual G- Values')
-        axs[1].set_ylabel('Predicted G- Values')
-        axs[1].set_title('G- Predictions vs. Actuals')
-        axs[1].plot([actuals_g_minus.min(), actuals_g_minus.max()], [actuals_g_minus.min(), actuals_g_minus.max()], 'k--', lw=2)  # Diagonal line
-        axs[1].legend()
-
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-        plt.show()
-
-        ############Plot3############
-        # Plotting bar plots of true and predicted values
-        
-        # Perform K-S test
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-        stat_g_plus, p_value_g_plus = ks_2samp(actuals_g_plus, predictions_g_plus)
-        stat_g_minus, p_value_g_minus = ks_2samp(actuals_g_minus, predictions_g_minus)
-
-        # Box plot for G+
-        axs[0].boxplot([actuals_g_plus, predictions_g_plus], labels=['Actual G+', 'Predicted G+'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[0].set_title('Comparison of Actual and Predicted G+ Values')
-        axs[0].set_ylabel('Value')
-        # Annotate with the K-S test results for G+
-        y = max(max(actuals_g_plus), max(predictions_g_plus)) + 1
-        axs[0].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[0].text(1.5, y+1, f'p-value = {p_value_g_plus:.3e}', ha='center', va='bottom', color='k')
-
-        # Box plot for G-
-        axs[1].boxplot([actuals_g_minus, predictions_g_minus], labels=['Actual G-', 'Predicted G-'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[1].set_title('Comparison of Actual and Predicted G- Values')
-        axs[1].set_ylabel('Value')
-        # Annotate with the K-S test results for G-
-        y = max(max(actuals_g_minus), max(predictions_g_minus)) + 1
-        axs[1].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[1].text(1.5, y+1, f'p-value = {p_value_g_minus:.3e}', ha='center', va='bottom', color='k')
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_box_plot.png'))
-        plt.show()
-
-        ############Plot4############
-        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
-
-        # Histogram for G+
-        bins = np.histogram_bin_edges(actuals_g_plus, bins=50)
-        axs[0].hist(actuals_g_plus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G+')
-        axs[0].hist(predictions_g_plus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G+')
-        axs[0].set_xlabel('Value')
-        axs[0].set_ylabel('Frequency')
-        axs[0].set_title('Histogram of Actual and Predicted G+ Values')
-        axs[0].legend()
-
-        # Histogram for G-
-        bins = np.histogram_bin_edges(actuals_g_minus, bins=50)
-        axs[1].hist(actuals_g_minus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G-')
-        axs[1].hist(predictions_g_minus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G-')
-        axs[1].set_xlabel('Value')
-        axs[1].set_ylabel('Frequency')
-        axs[1].set_title('Histogram of Actual and Predicted G- Values')
-        axs[1].legend()
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_histogram.png'))
-        plt.show()
-    elif label_mode == "distance":
-        """When label_mode is distance, output would be G+, G-, and motif distance score"""
-        ############Plot2############
-        # Plotting predictions vs actuals
-        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-
-        # Subplot for G+ predictions vs actuals
-        axs[0].scatter(actuals_g_plus, predictions_g_plus, alpha=0.5, s=2, label='G+')
-        axs[0].set_xlabel('Actual G+ Values')
-        axs[0].set_ylabel('Predicted G+ Values')
-        axs[0].set_title('G+ Predictions vs. Actuals')
-        axs[0].plot([actuals_g_plus.min(), actuals_g_plus.max()], [actuals_g_plus.min(), actuals_g_plus.max()], 'k--', lw=2)  # Diagonal line
-        axs[0].legend()
-
-        # Subplot for G- predictions vs actuals
-        axs[1].scatter(actuals_g_minus, predictions_g_minus, alpha=0.5, s=2, color='red', label='G-')
-        axs[1].set_xlabel('Actual G- Values')
-        axs[1].set_ylabel('Predicted G- Values')
-        axs[1].set_title('G- Predictions vs. Actuals')
-        axs[1].plot([actuals_g_minus.min(), actuals_g_minus.max()], [actuals_g_minus.min(), actuals_g_minus.max()], 'k--', lw=2)  # Diagonal line
-        axs[1].legend()
-
-        # Subplot for distance predictions vs actuals
-        axs[2].scatter(actuals_dist, predictions_dist, alpha=0.5, s=2, color='green', label='G-')
-        axs[2].set_xlabel('Actual Motif Distance Score')
-        axs[2].set_ylabel('Predicted Motif Distance Score')
-        axs[2].set_title('Motif Distance Score Predictions vs. Actuals')
-        axs[2].plot([actuals_dist.min(), actuals_dist.max()], [actuals_dist.min(), actuals_dist.max()], 'k--', lw=2)  # Diagonal line
-        axs[2].legend()
-
-        if save_plot == True:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-        plt.show()
-
-        ############Plot3############
-        # Plotting bar plots of true and predicted values
-        
-        # Perform K-S test
-        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-        stat_g_plus, p_value_g_plus = ks_2samp(actuals_g_plus, predictions_g_plus)
-        stat_g_minus, p_value_g_minus = ks_2samp(actuals_g_minus, predictions_g_minus)
-
-        # Box plot for G+
-        axs[0].boxplot([actuals_g_plus, predictions_g_plus], labels=['Actual G+', 'Predicted G+'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[0].set_title('Comparison of Actual and Predicted G+ Values')
-        axs[0].set_ylabel('Value')
-        # Annotate with the K-S test results for G+
-        y = max(max(actuals_g_plus), max(predictions_g_plus)) + 1
-        axs[0].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[0].text(1.5, y+1, f'p-value = {p_value_g_plus:.3e}', ha='center', va='bottom', color='k')
-
-        # Box plot for G-
-        axs[1].boxplot([actuals_g_minus, predictions_g_minus], labels=['Actual G-', 'Predicted G-'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[1].set_title('Comparison of Actual and Predicted G- Values')
-        axs[1].set_ylabel('Value')
-        # Annotate with the K-S test results for G-
-        y = max(max(actuals_g_minus), max(predictions_g_minus)) + 1
-        axs[1].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[1].text(1.5, y+1, f'p-value = {p_value_g_minus:.3e}', ha='center', va='bottom', color='k')
-
-        # Box plot for Motif Distance Score
-        axs[2].boxplot([actuals_dist, predictions_dist], labels=['Actual Motif Distance Score', 'Predicted Motif Distance Score'], flierprops={'marker':'o', 'color':'black', 'markersize':5})
-        axs[2].set_title('Comparison of Actual and Predicted Motif Distance Score')
-        axs[2].set_ylabel('Motif Distance Score')
-        # Annotate with the K-S test results for Motif Distance Score
-        y = max(max(actuals_dist), max(predictions_dist)) + 1
-        axs[2].plot([1, 1, 2, 2], [y, y+1, y+1, y], lw=1.5, c='k')
-        axs[2].text(1.5, y+1, f'p-value = {p_value_g_minus:.3e}', ha='center', va='bottom', color='k')
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_and_Motif_Distance_box_plot.png'))
-        plt.show()
-
-        ############Plot4############
-        fig, axs = plt.subplots(1, 3, figsize=(18, 6))
-
-        # Histogram for G+
-        bins = np.histogram_bin_edges(actuals_g_plus, bins=50)
-        axs[0].hist(actuals_g_plus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G+')
-        axs[0].hist(predictions_g_plus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G+')
-        axs[0].set_xlabel('Value')
-        axs[0].set_ylabel('Frequency')
-        axs[0].set_title('Histogram of Actual and Predicted G+ Values')
-        axs[0].legend()
-
-        # Histogram for G-
-        bins = np.histogram_bin_edges(actuals_g_minus, bins=50)
-        axs[1].hist(actuals_g_minus, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual G-')
-        axs[1].hist(predictions_g_minus, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted G-')
-        axs[1].set_xlabel('Value')
-        axs[1].set_ylabel('Frequency')
-        axs[1].set_title('Histogram of Actual and Predicted G- Values')
-        axs[1].legend()
-
-        # Histogram for Motif Distance Score
-        bins = np.histogram_bin_edges(actuals_dist, bins=50)
-        axs[2].hist(actuals_dist, bins=bins, alpha=0.7, color='red', edgecolor='black', label='Actual Motif Distance Score')
-        axs[2].hist(predictions_dist, bins=bins, alpha=0.5, color='green', edgecolor='black', label='Predicted Motif Distance Score')
-        axs[2].set_xlabel('Motif Distance Score')
-        axs[2].set_ylabel('Frequency')
-        axs[2].set_title('Histogram of Actual and Predicted Motif Distance Score')
-        axs[2].legend()
-
-        if save_plot:
-            plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_G_Plus_Minus_and_Motif_Distance_histogram.png'))
-        plt.show()
-    else:
-        TypeError("label_mode needs to be G+, G-, both, or distance")
-
-    ############ Figure 5: MSE, RMSE, MAE ############
-    fig1, axs1 = plt.subplots(3, 1, figsize=(10, 15))
-    axs1[0].plot(results['mse'], label='MSE')
-    axs1[0].set_title('Mean Squared Error over Epochs')
-    axs1[0].set_xlabel('Epoch')
-    axs1[0].set_ylabel('MSE')
-    axs1[0].legend()
-
-    axs1[1].plot(results['rmse'], label='RMSE')
-    axs1[1].set_title('Root Mean Squared Error over Epochs')
-    axs1[1].set_xlabel('Epoch')
-    axs1[1].set_ylabel('RMSE')
-    axs1[1].legend()
-
-    axs1[2].plot(results['mae'], label='MAE')
-    axs1[2].set_title('Mean Absolute Error over Epochs')
-    axs1[2].set_xlabel('Epoch')
-    axs1[2].set_ylabel('MAE')
-    axs1[2].legend()
-
-    fig1.tight_layout(pad=3.0)  # Adjust layout to make room for titles etc.
-    if save_plot:
-        plt.savefig(os.path.join(dir_path, 'mse_rmse_mae.png'))
-    plt.show()
-
-    ############ Figure 6: R^2, Pearson, Spearman ############
-    fig2, axs2 = plt.subplots(3, 1, figsize=(10, 15))
-    axs2[0].plot(results['r2'], label='R^2 Score')
-    axs2[0].set_title('R^2 Score over Epochs')
-    axs2[0].set_xlabel('Epoch')
-    axs2[0].set_ylabel('R^2')
-    axs2[0].set_ylim(-1, 1)
-    axs2[0].legend()
-
-    axs2[1].plot(results['pearson_corr'], label='Pearson Correlation')
-    axs2[1].set_title('Pearson Correlation over Epochs')
-    axs2[1].set_xlabel('Epoch')
-    axs2[1].set_ylabel('Pearson')
-    axs2[1].legend()
-
-    axs2[2].plot(results['spearman_corr'], label='Spearman Correlation')
-    axs2[2].set_title('Spearman Correlation over Epochs')
-    axs2[2].set_xlabel('Epoch')
-    axs2[2].set_ylabel('Spearman')
-    axs2[2].legend()
-
-    fig2.tight_layout(pad=3.0)  # Adjust layout to make room for titles etc.
-    if save_plot:
-        plt.savefig(os.path.join(dir_path, 'r2_pearson_spearman.png'))
-    plt.show()
-
-    return results['mse'][best_model], results['rmse'][best_model], results['mae'][best_model], results['r2'][best_model], results['pearson_corr'][best_model], results['spearman_corr'][best_model]
-
-def scale_labels_0_1(labels):
-    """ Scales labels to the range [0, 1]. """
-    min_val = labels.min(0, keepdim=True)[0]
-    max_val = labels.max(0, keepdim=True)[0]
-    return (labels - min_val) / (max_val - min_val)
-
-def scale_labels_minus1_1(labels):
-    """ Scales labels to the range [-1, 1]. """
-    min_val = labels.min(0, keepdim=True)[0]
-    max_val = labels.max(0, keepdim=True)[0]
-    return 2 * (labels - min_val) / (max_val - min_val) - 1
-
-def pearson_loss(x, y):
-    """
-    Compute Pearson correlation-based loss.
-    :param x: torch.Tensor, predicted values.
-    :param y: torch.Tensor, true values.
-    :return: torch.Tensor, one minus Pearson correlation coefficient.
-    """
-    x = x.squeeze()  # Ensure x is the correct shape.
-    y = y.squeeze()  # Ensure y is the correct shape.
-    mx = torch.mean(x)
-    my = torch.mean(y)
-    xm, ym = x - mx, y - my
-    r_num = torch.sum(xm * ym)
-    r_den = torch.sqrt(torch.sum(xm ** 2) * torch.sum(ym ** 2))
-    r = r_num / r_den
-    return 1 - r  # Minimize 1 - r to maximize r.
-
-def pearson_correlation(y_true, y_pred):
-    """
-    Calculate the Pearson correlation coefficient between the ground truth (y_true)
-    and predictions (y_pred) using numpy.
-    """
-    # Ensure arrays are in float for precision
-    y_true = np.asarray(y_true, dtype=np.float32)
-    y_pred = np.asarray(y_pred, dtype=np.float32)
-    
-    # Calculate means
-    mean_y_true = np.mean(y_true, axis=0)
-    mean_y_pred = np.mean(y_pred, axis=0)
-    
-    # Calculate deviations from means
-    y_true_centered = y_true - mean_y_true
-    y_pred_centered = y_pred - mean_y_pred
-    
-    # Covariance between y_true and y_pred
-    covariance = np.sum(y_true_centered * y_pred_centered)
-    
-    # Variances of y_true and y_pred
-    y_true_variance = np.sum(y_true_centered ** 2)
-    y_pred_variance = np.sum(y_pred_centered ** 2)
-    
-    # Pearson correlation coefficient calculation
-    denominator = np.sqrt(y_true_variance * y_pred_variance)
-    if denominator == 0:
-        return 0  # Avoid division by zero; return 0 correlation
-    correlation_coefficient = covariance / denominator
-    
-    return correlation_coefficient
-
-def evaluate_regression_model_old(model, test_loader, train_losses, test_losses, train_losses_by_batch, test_losses_by_batch, device, save_plot = False, dir_path = None):
-    model.eval()
-    actuals = []
-    predictions = []
-    with torch.no_grad():
-        for inputs, labels in test_loader:
-            inputs = inputs.to(device)
-            outputs = model(inputs).cpu().numpy().flatten()
-            predictions.extend(outputs)
-            actuals.extend(labels.cpu().numpy().flatten())
-    
-    # Convert to numpy arrays for easier manipulation
-    predictions = np.array(predictions)
-    actuals = np.array(actuals)
-    print(f"shape of predictions: {predictions.shape}, shape of actuals: {actuals.shape}")
-    # Calculating errors and R-squared
-    mse = mean_squared_error(actuals, predictions)
-    rmse = np.sqrt(mse)
-    mae = mean_absolute_error(actuals, predictions)
-    r2 = r2_score(actuals, predictions)
-    # Calculating Pearson and Spearman correlations
-    pearson_corr, _ = pearsonr(actuals, predictions)
-    spearman_corr, _ = spearmanr(actuals, predictions)
-
-    # Directory setup
-    if save_plot == True:
-        os.makedirs(dir_path, exist_ok=True)
-
-    # Create a list of epoch numbers starting from 2 (since we are skipping the first index, index 1)
-    # If we want to include the first epoch's loss and start ticks from 1
-    epochs = range(2, len(train_losses) + 1)
-
-    # Create ticks every 10 epochs starting from 1
-    ticks = range(2, len(train_losses) + 1, 10)
-
-    # Plotting train_losses and test_losses starting from the second epoch
-    plt.figure(figsize=(10, 5))
-    plt.plot(epochs, train_losses[1:], label='Training Loss')  # Skip index 0 by slicing from index 1
-    plt.plot(epochs, test_losses[1:], label='Testing Loss')  # Skip index 0 by slicing from index 1
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Testing Loss Over Epochs (Starting from Epoch 2)')
-    plt.legend()
-    plt.xticks(ticks)  # Set x-ticks to show proper epoch numbers
-    if save_plot:
-        plt.savefig(os.path.join(dir_path, 'training_testing_loss.png'))
-    plt.show()
-
-    # Plotting train_losses and test_losses
-    plt.figure(figsize=(10, 5))
-    plt.plot(epochs, train_losses_by_batch[1:], label='Training Loss')
-    plt.plot(epochs, test_losses_by_batch[1:], label='Testing Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Testing (By Batch) Loss Over Epochs')
-    plt.legend()
-    plt.xticks(ticks)
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'training_testing_loss_by_batch.png'))
-    plt.show()
-    
-    # Plotting predictions vs actuals
-    plt.figure(figsize=(10, 5))
-    plt.scatter(actuals, predictions, alpha=0.5, s= 2)
-    plt.xlabel('Actual Values')
-    plt.ylabel('Predictions')
-    plt.title('Predictions vs. Actuals')
-    plt.plot([actuals.min(), actuals.max()], [actuals.min(), actuals.max()], 'k--', lw=2)  # Diagonal line
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_Correlation_Plot.png'))
-    plt.show()
-
-    # Plotting bar plots of true and predicted values
-    # Perform K-S test
-    stat, p_value = ks_2samp(actuals, predictions)
-
-    # Create the box plot
-    plt.figure(figsize=(8, 6))
-    plt.boxplot([actuals, predictions], labels=['Actual Values', 'Predicted Values'],flierprops={'marker':'o', 'color':'black', 'markersize':5})
-    plt.title('Comparison of Actual and Predicted Values')
-    plt.ylabel('Value')
-
-    # Annotate with the K-S test results
-    x1, x2 = 1, 2  # Columns numbers on your plot
-    y, h, col = max(max(actuals), max(predictions)) + 1, 1, 'k'  # y is the height, h is the height of the line, col is the color
-    plt.plot([x1, x1, x2, x2], [y, y+h, y+h, y], lw=1.5, c=col)
-    plt.text((x1+x2)*.5, y+h, f'p-value = {p_value:.3e}', ha='center', va='bottom', color=col)
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_bar_plot.png'))
-    plt.show()
-
-    residuals = actuals - predictions
-    # Plotting residuals
-    plt.figure(figsize=(10, 5))
-    plt.scatter(predictions, residuals, alpha=0.5)
-    plt.xlabel('Predictions')
-    plt.ylabel('Residuals')
-    plt.title('Residuals vs. Predictions')
-    plt.axhline(y=0, color='r', linestyle='--')
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'Residual_Prediction_plot.png'))
-    plt.show()
-
-    # Histogram of true and predicted values
-    plt.figure(figsize=(10, 5))
-    plt.hist(actuals, bins=50, alpha=0.7, color='red', edgecolor='black', label='Actual Values')
-    plt.hist(predictions, bins=50, alpha=0.5, color='green', edgecolor='black', label='Predicted Values')
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.title('Histogram of Actual and Predicted Values')
-    plt.legend()
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'Prediction_Actuals_histgram.png'))
-    plt.show()
-
-    # Histogram of residuals
-    plt.figure(figsize=(10, 5))
-    plt.hist(residuals, bins=50, alpha=0.7, color='blue', edgecolor='black')
-    plt.xlabel('Residuals')
-    plt.title('Histogram of Residuals')
-    if save_plot == True:
-        plt.savefig(os.path.join(dir_path, 'Residual_histgram.png'))
-    plt.show()
-
-    return mse, rmse, mae, r2, pearson_corr, spearman_corr
-
-def evaluate_regression_model_old(model, test_loader, device):
-    model.eval()
-    actuals = []
-    predictions = []
-    
-    with torch.no_grad():
-        for inputs, labels in test_loader:
-            inputs = inputs.to(device)
-            outputs = model(inputs).cpu().numpy().flatten()
-            predictions.extend(outputs)
-            actuals.extend(labels.cpu().numpy().flatten())
-    
-    # Convert to numpy arrays for easier manipulation
-    predictions = np.array(predictions)
-    actuals = np.array(actuals)
-    # Calculating errors and R-squared
-    mse = mean_squared_error(actuals, predictions)
-    rmse = np.sqrt(mse)
-    mae = mean_absolute_error(actuals, predictions)
-    r2 = r2_score(actuals, predictions)
-    # Calculating Pearson and Spearman correlations
-    pearson_corr = pearson_correlation(actuals, predictions)
-    spearman_corr, _ = spearmanr(actuals, predictions)
-    print("------------------------Evaluation------------------------")
-    print(f"MSE: {mse:.4f}, RMSE: {rmse:.4f}, MAE: {mae:.4f}")
-    print(f"R^2: {r2:.4f}, Pearson Correlation: {pearson_corr:.4f}, Spearman Correlation: {spearman_corr:.4f}")
-    print("----------------------------------------------------------")
-    return mse, rmse, mae, r2, pearson_corr, spearman_corr

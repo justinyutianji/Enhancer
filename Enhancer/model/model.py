@@ -519,7 +519,7 @@ class ExplaiNN3_interact(nn.Module):
             "weight_path": weight_path,
             "num_interaction_term": num_cnns * (num_cnns-1) / 2
         }
-        self.linears1 = nn.Sequential(
+        self.linears = nn.Sequential(
             nn.Conv1d(in_channels=4 * num_cnns, out_channels=1 * num_cnns, kernel_size=filter_size, groups=num_cnns),
             nn.BatchNorm1d(num_cnns),
             ExpActivation(),
@@ -569,7 +569,7 @@ class ExplaiNN3_interact(nn.Module):
         
     def forward(self, x):
         x = x.repeat(1, self._options["num_cnns"], 1)
-        x = self.linears1(x)
+        x = self.linears(x)
 
         # Interaction Block after ExpActivation
         motif_pairs = []
@@ -596,7 +596,7 @@ class ExplaiNN3_interact(nn.Module):
 
 class ExplaiNN3_interact2(nn.Module):
     def __init__(self, num_cnns, input_length, num_classes, 
-                 filter_size=19, interaction_filter_size = 40, num_fc=2, pool_size=7, pool_stride=7, 
+                 filter_size=19, interaction_filter_size = 17, num_fc=2, pool_size=7, pool_stride=7, 
                  drop_out=0.3, weight_path=None):
         super(ExplaiNN3_interact2, self).__init__()
         self._options = {
@@ -610,7 +610,7 @@ class ExplaiNN3_interact2(nn.Module):
             "weight_path": weight_path,
             "num_interaction_term": num_cnns * (num_cnns-1) / 2
         }
-        self.linears1 = nn.Sequential(
+        self.linears = nn.Sequential(
             nn.Conv1d(in_channels=4 * num_cnns, out_channels=1 * num_cnns, kernel_size=filter_size, groups=num_cnns),
             nn.BatchNorm1d(num_cnns),
             ExpActivation()
@@ -660,7 +660,7 @@ class ExplaiNN3_interact2(nn.Module):
         
     def forward(self, x):
         x = x.repeat(1, self._options["num_cnns"], 1)
-        x = self.linears1(x)
+        x = self.linears(x)
 
         # Interaction Block after ExpActivation
         motif_pairs = []
