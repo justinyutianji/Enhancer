@@ -231,9 +231,9 @@ def generate_synthetic_distance_data(dna_length: int, motif_names: list, input_d
 
     return result_df
 
-def motif_score_prediction(df, model, device, batch:int, target_labels: list, output_dir = None):
+def motif_score_prediction(df, model, device, batch:int, target_labels: list,feature_list, output_dir = None):
     result_df = df.copy()
-    dataset = EnhancerDataset(df, feature_list=['motif_distance_score'], scale_mode = 'none')
+    dataset = EnhancerDataset(df, feature_list=feature_list, scale_mode = 'none')
     # Prepare dataloader
     dataset = DataLoader(dataset=dataset, batch_size=batch, shuffle=False)
     # Running get_explainn_predictions function to get predictions and true labels for all sequences in the given data loader

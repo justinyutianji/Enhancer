@@ -150,7 +150,7 @@ data_loader = torch.utils.data.DataLoader(dataset=dataset,
                                           batch_size=batch, shuffle=False,)
 
 
-if save_cutoff_plot == True:
+if save_cutoff_plot:
     print("Plot histogram of residuals with adjusted cutoff lines")
     # Plot histogram of residuals with adjusted cutoff lines
     # 1. Compute residuals (not absolute)
@@ -159,18 +159,29 @@ if save_cutoff_plot == True:
     # 2. Define bounds for plotting
     lower_bound = -upper_bound
 
-    # 3.Plotting the histograms for each feature
-    fig, axes = plt.subplots(nrows=predictions.shape[1], ncols=1, figsize=(5, 4*predictions.shape[1]))
+    # 3. Plotting the histograms for each feature
+    num_labels = predictions.shape[1] if len(predictions.shape) > 1 else 1
+    fig, axes = plt.subplots(nrows=num_labels, ncols=1, figsize=(5, 4*num_labels))
+    
+    # Ensure `axes` is iterable (even if it's a single Axes object)
+    if num_labels == 1:
+        axes = [axes]
+    
     fig.tight_layout(pad=3.0)
 
     # Title for the entire figure
     fig.suptitle('Histogram of Residuals for Each Feature with Confidence Cutoffs', fontsize=16, y=1.02)
 
-    for i in range(predictions.shape[1]):
+    for i in range(num_labels):
         ax = axes[i]
-        ax.hist(residuals[:, i], bins=50, color='skyblue', edgecolor='black', alpha=0.7)
-        ax.axvline(x=lower_bound, color='red', linestyle='--', label=f'Lower Cutoff (-0.25)')
-        ax.axvline(x=upper_bound, color='green', linestyle='--', label=f'Upper Cutoff (+0.25)')
+        if num_labels > 1:
+            residual_col = residuals[:, i]
+        else:
+            residual_col = residuals
+
+        ax.hist(residual_col, bins=50, color='skyblue', edgecolor='black', alpha=0.7)
+        ax.axvline(x=lower_bound, color='red', linestyle='--', label=f'Lower Cutoff ({lower_bound})')
+        ax.axvline(x=upper_bound, color='green', linestyle='--', label=f'Upper Cutoff ({upper_bound})')
         ax.set_title(f'Feature {i+1} Residuals')
         ax.set_xlabel('Residuals')
         ax.set_ylabel('Frequency')

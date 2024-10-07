@@ -6,14 +6,12 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-import torch.nn as nn
-from torch.optim import Adam
 from sklearn.model_selection import train_test_split
 import pickle
 import os
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, auc, precision_recall_curve, average_precision_score,mean_squared_error, r2_score, mean_absolute_error
-from scipy.stats import ks_2samp, pearsonr, spearmanr
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from scipy.stats import pearsonr, spearmanr
 import random
 from matplotlib import rcParams
 import glob
@@ -207,6 +205,22 @@ def find_tsv_file_path(dir_path):
         raise ValueError("More than one .tsv file found.")
     else:
         raise FileNotFoundError("No .tsv file found.")
+
+def pearson_loss(x, y):
+    """
+    Loss that is based on Pearson correlation/objective function
+    :param x: torch, input data
+    :param y: torch, output labels
+    :return: torch, pearson loss per sample
+    """
+
+    mx = torch.mean(x, dim=1, keepdim=True)
+    my = torch.mean(y, dim=1, keepdim=True)
+    xm, ym = x - mx, y - my
+
+    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+    loss = torch.sum(1-cos(xm,ym))
+    return loss
 
 def split_dataset(df, split_type='random', key=None, cutoff=0.8, seed=None):
     """
@@ -684,7 +698,7 @@ def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses
         axs[i].scatter(actual_list, prediction_list, alpha=0.5, s=2)
         axs[i].set_xlabel(f'Actual {label} Values', fontsize=12)
         axs[i].set_ylabel(f'Predicted {label} Values', fontsize=12)
-        axs[i].set_title(f'{label} Predictions vs. Actuals', fontsize=14)
+        #axs[i].set_title(f'{label} Predictions vs. Actuals', fontsize=14)
         axs[i].plot([actual_list.min(), actual_list.max()], [actual_list.min(), actual_list.max()], 'k--', lw=2)  # Diagonal line
 
     if save_plot:

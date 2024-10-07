@@ -426,14 +426,14 @@ def plot_unit_importance(unit_importance_values, unit_names, title_suffix, dir_s
 
     # Set custom sorted y-axis labels
     plt.gca().set_yticks(range(1, len(sorted_names) + 1))  # Setting y-ticks
-    plt.gca().set_yticklabels(sorted_names, rotation=0)  # Setting y-tick labels
+    plt.gca().set_yticklabels(sorted_names, rotation=0,fontsize = 14)  # Setting y-tick labels
 
     # Invert the y-axis so the largest mean is on top
     plt.gca().invert_yaxis()
 
     # Set title and axis labels
-    plt.title(f"Unit Importance of Each Filter on Predicting {title_suffix}")
-    plt.xlabel("Importance Values")
+    #plt.title(f"Unit Importance of Each Filter on Predicting {title_suffix}")
+    plt.xlabel("Importance Values",fontsize = 14)
     
     # Adjust layout and show plot
     plt.tight_layout()

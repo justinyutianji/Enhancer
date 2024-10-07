@@ -147,6 +147,44 @@ def get_explainn_unit_activations(data_loader, model, device):
 
     return np.array(running_activations)
 
+def get_explainn_unit_activations_interact(data_loader, model, device):
+    """
+    Function to scan input sequences by ExplaiNN model convolutional filters and compute the convolutional units outputs
+    (activations)
+    :param data_loader: torch DataLoader, the sequence dataset
+    :param model: ExplaiNN model
+    :param device: current available device ('cuda:0' or 'cpu')
+    :return: numpy.array, matrix of activations of shape (N, U, S); N - size of the dataset; U - number of units;
+    S - size of the activation map
+    """
+
+    running_activations = []
+    tqdm_kwargs = {"bar_format": bar_format, "total": len(data_loader)}
+
+    with torch.no_grad():
+        for seq, lbl in tqdm(data_loader, **tqdm_kwargs):
+            seq = seq.to(device)
+            seq = seq.repeat(1, model._options["num_cnns"], 1)
+
+            # Get activations from the CNN filters
+            cnn_activations = model.linears[:3](seq)
+
+            # Get interaction activations
+            motif_pairs = []
+            for i in range(model._options["num_cnns"]):
+                for j in range(i + 1, model._options["num_cnns"]):
+                    pair = torch.cat([cnn_activations[:, i:i+1, :], cnn_activations[:, j:j+1, :]], dim=1)
+                    motif_pairs.append(pair)
+            interaction_x = torch.cat(motif_pairs, dim=1)
+            interaction_activations = model.interaction(interaction_x)
+
+            # Concatenate CNN and interaction activations
+            combined_activations = torch.cat((cnn_activations, interaction_activations), dim=1)
+
+            running_activations.extend(combined_activations.cpu().numpy().astype(np.half))
+
+    return np.array(running_activations)
+
 
 def get_danq_activations(data_loader, model, device):
     """
@@ -225,6 +263,55 @@ def get_pwms_explainn(activations, sequences, filter_size):
 
     return pwm
 
+def get_pwms_explainn_interact(activations, sequences, filter_size):
+    """
+    Function to convert filter activation values to PWMs
+    :param activations: numpy.array, matrix of activations of shape (N, U, S); N - size of the dataset;
+    U - number of units; S - size of the activation map
+    :param sequences: torch, array of one-hot encoded sequences
+    :param filter_size: int, size of the filter
+    :return: numpy.array, pwm matrices, shape (U, 4, filter_size), where U - number of units
+    """
+
+    # Find the threshold value for activation
+    activation_threshold = 0.5 * np.amax(activations, axis=(0, 2))
+
+    # Get the number of units/filters (CNN + interaction)
+    n_filters = activations.shape[1]
+
+    # Initialize the PWM array
+    pwm = np.full((n_filters, 4, filter_size), .25)
+    n_samples = activations.shape[0]
+
+    # Store activation indices for visualization
+    activation_indices = []
+    tqdm_kwargs = {"bar_format": bar_format, "total": n_filters}
+
+    # Iterate through each filter (CNN + interaction)
+    for i in tqdm(range(n_filters), **tqdm_kwargs):
+        # Create list to store filter_size bp sequences that activated filter
+        act_seqs_list = []
+
+        for j in range(n_samples):
+            # Find all indices where filter is activated
+            indices = np.where(activations[j, i, :] > activation_threshold[i])
+
+            for start in indices[0]:
+                activation_indices.append(start)
+                end = start + filter_size
+                act_seqs_list.append(sequences[j, :, start:end])
+
+        # Convert act_seqs from list to array
+        if act_seqs_list:
+            act_seqs = np.stack(act_seqs_list)
+            pwm_tmp = np.sum(act_seqs, axis=0)
+            total = np.sum(pwm_tmp, axis=0)
+            total[total == 0] = 1.0  # Avoid division by zero
+            pwm_tmp = np.nan_to_num(pwm_tmp / total)
+            pwm[i] = pwm_tmp
+
+    return pwm
+
 
 def pwm_to_meme(pwm, output_file_path, names=None, verbose=True):
     """
@@ -255,6 +342,48 @@ def pwm_to_meme(pwm, output_file_path, names=None, verbose=True):
 
     if verbose:
         print('Saved PWM File as : {}'.format(output_file_path))
+
+def pwm_to_meme_interact(pwm, output_file_path, names=None, num_cnns=40, verbose=True):
+    """
+    Function to convert pwm array to meme file.
+    :param pwm: numpy.array, pwm matrices, shape (U, 4, filter_size), where U - number of units
+    :param output_file_path: string, the name of the output meme file
+    :param names: optional dictionary, where keys are filter indices and values are filter names
+    :param num_cnns: int, the number of CNN filters, to distinguish CNN filters from interaction filters
+    :param verbose: bool, whether to print success message after saving
+    """
+
+    n_filters = len(pwm)
+
+    # Generate filter names if not provided
+    if names is None:
+        names = {}
+        for i in range(n_filters):
+            if i < num_cnns:
+                names[i] = f"filter{i}"  # CNN filters
+            else:
+                names[i] = f"int_f{i - num_cnns}"  # Interaction filters
+
+    # Open the output file to write the MEME format
+    with open(output_file_path, 'w') as meme_file:
+        meme_file.write("MEME version 4\n")
+        
+        for i in range(n_filters):
+            if np.sum(pwm[i][:, :]) > 0:
+                meme_file.write("\n")
+                meme_file.write("MOTIF %s \n" % names[i])
+                meme_file.write(
+                    "letter-probability matrix: alength= 4 w= %d \n" % np.count_nonzero(np.sum(pwm[i][:, :], axis=0)))
+                
+                filter_size = pwm[i].shape[1]
+                
+                # Write the letter probability matrix for each position
+                for j in range(filter_size):
+                    if np.sum(pwm[i][:, j]) > 0:
+                        meme_file.write(f"{pwm[i][0, j]:.6f}\t{pwm[i][1, j]:.6f}\t{pwm[i][2, j]:.6f}\t{pwm[i][3, j]:.6f}\n")
+    
+    if verbose:
+        print(f'Saved PWM File as: {output_file_path}')
 
 
 def get_median_unit_importance(activations, model, unit_outputs, target_labels):
