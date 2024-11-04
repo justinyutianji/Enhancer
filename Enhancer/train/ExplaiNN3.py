@@ -16,7 +16,7 @@ from model import ExplaiNN3
 # from your_module import split_dataset, EnhancerDataset, ConvNetDeep, train_model, evaluate_regression_model
 
 #-------------------------------------
-#*********Train ConvNetDeep************
+#*********Train ExplaiNN************
 #************Predict GFP**************
 #-------------------------------------
 

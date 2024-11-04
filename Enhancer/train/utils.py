@@ -222,7 +222,7 @@ def pearson_loss(x, y):
     loss = torch.sum(1-cos(xm,ym))
     return loss
 
-def split_dataset(df, split_type='random', key=None, cutoff=0.8, seed=None):
+def split_dataset_old(df, split_type='random', key=None, cutoff=0.8, seed=None):
     """
     Splits a dataset based on the specified criteria.
 
@@ -259,6 +259,119 @@ def split_dataset(df, split_type='random', key=None, cutoff=0.8, seed=None):
         raise ValueError("Invalid split type specified. Use 'random' or 'key'.")
 
     return train_set, test_set
+
+def split_dataset(df, split_type='random', split_pattern=None, keys=None, seed=None):
+    """
+    Splits a dataset based on the specified criteria.
+
+    Parameters:
+    - df (DataFrame): The pandas DataFrame to split.
+    - split_type (str): Type of split. 'random' for random split; 'fragment' for split based on sequence fragment presence.
+    - split_pattern (list of floats): A list of three elements specifying the proportions for train, validation, and test sets (only for random split).
+    - keys (tuple of ints): Two keys to look for within Pos1, Pos2, Pos3 columns for 'fragment' split. The first key holds validation, the second key holds testing.
+    - seed (int): Seed number for reproducibility.
+
+    Returns:
+    - train_set (DataFrame): The training dataset.
+    - val_set (DataFrame): The validation dataset (or None if not applicable).
+    - test_set (DataFrame): The testing dataset.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+        
+    if split_type == 'random':
+        if split_pattern is None or len(split_pattern) != 3 or not np.isclose(sum(split_pattern), 1):
+            raise ValueError("split_pattern must be a list of three elements that add up to 1 for train, validation, and test.")
+        train_ratio, val_ratio, test_ratio = split_pattern
+
+        # Handle cases where validation or test is zero
+        if val_ratio == 0:
+            train_set, test_set = train_test_split(df, test_size=test_ratio, random_state=seed)
+            val_set = None
+        elif test_ratio == 0:
+            train_set, val_set = train_test_split(df, test_size=val_ratio, random_state=seed)
+            test_set = None
+        else:
+            train_set, temp_set = train_test_split(df, test_size=(val_ratio + test_ratio), random_state=seed)
+            val_ratio_adjusted = val_ratio / (val_ratio + test_ratio)
+            val_set, test_set = train_test_split(temp_set, test_size=(1 - val_ratio_adjusted), random_state=seed)
+
+    elif split_type == 'fragment':
+        if keys is None or len(keys) != 2:
+            raise ValueError("For 'fragment' split_type, keys must be a tuple with two elements for validation and test keys.")
+        key_val, key_test = keys
+
+        # Create masks based on keys for validation and test sets
+        val_mask = (df['Pos1'] == key_val) | (df['Pos2'] == key_val) | (df['Pos3'] == key_val)
+        test_mask = (df['Pos1'] == key_test) | (df['Pos2'] == key_test) | (df['Pos3'] == key_test)
+        
+        val_set = df[val_mask]
+        test_set = df[test_mask & ~val_mask]  # Ensure no overlap between validation and test
+        train_set = df[~(val_mask | test_mask)]  # Exclude validation and test samples from train
+
+    else:
+        raise ValueError("Invalid split type specified. Use 'random' or 'fragment'.")
+
+    return train_set, val_set, test_set
+
+class EnhancerDatasetWithID(Dataset):
+    def __init__(self, dataset, feature_list, scale_mode='none'):
+        """
+        Initialize the dataset with the mode specifying which labels to include.
+        
+        Args:
+        feature_list (List): Specifies a list of feature names (column names in the input dataset) 
+                            used to train the model. All the feature names need to exist 
+                            in the input dataset column names.
+        scale_mode (str): Specifies the scaling mode. Can be 'none', '0-1', or '-1-1'.
+                              'none' means no scaling, '0-1' scales labels to [0, 1],
+                              and '-1-1' scales labels to [-1, 1].
+        """
+
+        # Data loading
+        df = dataset.copy()
+
+        # Apply the one-hot encoding directly and safely
+        df.loc[:, 'one_hot'] = df['sequence'].apply(lambda x: torch.from_numpy(dna_one_hot(x, flatten=False)))
+
+        one_hot_list = df['one_hot'].tolist()
+        self.x = torch.stack(one_hot_list).float()
+
+        # Check if feature_list is empty:
+        if len(feature_list) == 0:
+            raise KeyError("feature_list should not be empty")
+
+        # Check if all features in the feature_list exist in the data frame. If any feature is missing, raise an error.
+        missing_features = [feature for feature in feature_list if feature not in df.columns]
+        if missing_features:
+            print(f'feature_list is: {feature_list}')
+            print(f'All columns of dataset are: {list(df.columns)}')
+            raise KeyError(f"The following features from 'feature_list' are not found in the dataset: {missing_features}")
+        
+        # Stack all features together vertically to prepare the labels
+        labels = np.stack([np.array(df[feature]) for feature in feature_list], axis=1)
+        # Convert labels to torch object
+        self.y = torch.from_numpy(labels).float()
+
+        # Store the fragment IDs
+        self.fragment_ids = df['fragment_ids'].values
+
+        # Apply scaling if specified
+        if scale_mode == '0-1':
+            self.y = scale_labels_0_1(self.y)
+        elif scale_mode == '-1-1':
+            self.y = scale_labels_minus1_1(self.y)
+        elif scale_mode not in ['0-1','-1-1','none']:
+            raise ValueError("Invalid scale_mode provided. Choose '0-1', '-1-1', or 'none'.")
+        
+        self.n_samples = self.x.shape[0]
+
+    def __getitem__(self, index):
+        return self.x[index], self.y[index], self.fragment_ids[index]
+    
+    def __len__(self):
+        return self.n_samples
+
 
 class EnhancerDataset(Dataset):
     def __init__(self, dataset, feature_list, scale_mode='none'):
@@ -316,11 +429,23 @@ class EnhancerDataset(Dataset):
     def __len__(self):
         return self.n_samples
 
+def scale_labels_0_1(labels):
+    """ Scales labels to the range [0, 1]. """
+    min_val = labels.min(0, keepdim=True)[0]
+    max_val = labels.max(0, keepdim=True)[0]
+    return (labels - min_val) / (max_val - min_val)
+
+def scale_labels_minus1_1(labels):
+    """ Scales labels to the range [-1, 1]. """
+    min_val = labels.min(0, keepdim=True)[0]
+    max_val = labels.max(0, keepdim=True)[0]
+    return 2 * (labels - min_val) / (max_val - min_val) - 1
+
 def evaluate_model(model, test_loader, batch_size, criterion, device):
     model.eval()  # Set the model to evaluation mode
     with torch.no_grad():
         test_loss = 0
-        for inputs, labels in test_loader:
+        for inputs, labels, fragment_ids in test_loader:
             inputs = inputs.to(device)
             labels = labels.to(device)
             outputs = model(inputs)
@@ -331,7 +456,223 @@ def evaluate_model(model, test_loader, batch_size, criterion, device):
         avg_test_loss_by_batch = test_loss / len(test_loader)
     return avg_test_loss, avg_test_loss_by_batch
 
-def train_model(model, train_loader, test_loader, target_labels, num_epochs=100, batch_size=10, learning_rate=1e-6, criteria = 'mse',optimizer_type = "adam",patience=10, seed = 42, save_model = False, dir_path = None):
+def train_model(model, train_loader, val_loader, test_loader, target_labels, num_epochs=100, batch_size=10, learning_rate=1e-6, criteria = 'mse',optimizer_type = "adam",patience=10, seed = 42, save_model = False, dir_path = None):
+    if seed is not None:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
+    if dir_path == None and save_model == True:
+            print("dir_path is set to None, model will not be saved")
+
+    # Initialize the model, loss criterion, and optimizer
+    model.to(device)
+    print(f"Model is on device: {next(model.parameters()).device}")
+    
+    if criteria == "bcewithlogits":
+        criterion = torch.nn.BCEWithLogitsLoss()
+    elif criteria == "crossentropy":
+        criterion = torch.nn.CrossEntropyLoss()
+    elif criteria == "mse":
+        criterion = torch.nn.MSELoss()
+    elif criteria == "pearson":
+        criterion = pearson_loss
+    elif criteria == "poissonnll":
+        criterion = torch.nn.PoissonNLLLoss()
+    elif criteria == 'huber':
+        criterion = torch.nn.SmoothL1Loss()
+
+    if optimizer_type == "adam":
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    elif optimizer_type == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+    else:
+        raise ValueError("Optimizer not recognized. Please choose between adam or sgd")
+    # Lists to store loss history for visualization
+    train_losses = []
+    val_losses = []
+    train_losses_by_batch = []
+    val_losses_by_batch = []
+
+    # Add a label to represent combined metrics
+    target_label_names = target_labels[:]
+    target_label_names.append('total')
+
+    # Create a dictionary to store metrics from each epoch
+    results = {}
+    # For each label, create a dictionary of lists to store their metrics from current epoch
+    for label in target_label_names:
+        results[label] = {
+            'mse': [], 
+            'rmse': [], 
+            'mae': [], 
+            'r2': [], 
+            'pearson_corr': [], 
+            'spearman_corr': []
+        }
+
+
+    # Early stopping specifics
+    best_val_loss = float('inf')
+    early_stop = False
+    epochs_no_improve = 0
+    best_pearson = -2.0
+    best_pearson_epoch = -1
+    best_r2 = -200.0
+    best_r2_epoch = -1
+
+    # Training loop
+    for epoch in range(num_epochs):
+        model.train()
+        train_loss = 0
+        n_total_steps = len(train_loader)
+        for i, (inputs, labels, fragment_ids) in enumerate(train_loader):
+            inputs, labels = inputs.to(device), labels.to(device)
+            # Forward pass
+            outputs = model(inputs)
+            #labels = labels.unsqueeze(1)
+            loss = criterion(outputs, labels)
+
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            train_loss += loss.item()
+            if (i + 1) % 200 == 0 or i == 0:
+                print(f"Epoch {epoch + 1}/{num_epochs}, Step {i + 1}/{n_total_steps}, Loss: {loss.item():.4f}")
+
+        avg_train_loss = train_loss / len(train_loader.dataset)
+        avg_train_loss_by_batch = train_loss / len(train_loader)
+        train_losses.append(avg_train_loss)
+        train_losses_by_batch.append(avg_train_loss_by_batch)
+
+        # Evaluate the model
+        avg_val_loss, avg_val_loss_by_batch = evaluate_model(model, val_loader, batch_size, criterion, device)
+        val_losses.append(avg_val_loss)
+        val_losses_by_batch.append(avg_val_loss_by_batch)
+
+        #print(f"Epoch {epoch + 1}/{num_epochs}: Train Loss: {avg_train_loss:.4f} , Test Loss: {avg_val_loss:.4f}")
+        #print(f"Epoch {epoch + 1}/{num_epochs}: Train Loss By Batch: {avg_train_loss_by_batch:.4f} , Test Loss By Batch: {avg_val_loss_by_batch:.4f}")
+        print(f"Epoch {epoch + 1}/{num_epochs} -- Train Loss: {avg_train_loss_by_batch:.4f} , Validation Loss: {avg_val_loss_by_batch:.4f}")
+
+        # metrics = {'mse': [], 'rmse': [], 'mae': [], 'r2': [], 'pearson_corr': [], 'spearman_corr': []}
+        metrics = evaluate_regression_model(model, val_loader, device)
+
+        # First, check if the number of labels is the same as the number of labels in metrics
+        if len(target_label_names) != len(metrics['mse']):
+            raise IndexError(f"target_labels are {target_label_names}   length of metrics are {len(metrics['mse'])}")
+
+        # for each label in target_label list, store the 6 metric scores in current epoch
+        for i in range(len(target_label_names)):
+            label = target_label_names[i]
+            results[label]['mse'].append(metrics['mse'][i])
+            results[label]['rmse'].append(metrics['rmse'][i])
+            results[label]['mae'].append(metrics['mae'][i])
+            results[label]['r2'].append(metrics['r2'][i])
+            results[label]['pearson_corr'].append(metrics['pearson_corr'][i])
+            results[label]['spearman_corr'].append(metrics['spearman_corr'][i])
+
+        # Get pearson correlation and r2 from flattened predictions (not calculated label by label) and labels
+        pearson_corr = metrics['pearson_corr'][-1]
+        r2 = metrics['r2'][-1]
+
+        if pearson_corr >= best_pearson:
+            best_pearson = pearson_corr
+            best_pearson_epoch = epoch
+        if r2 >= best_r2:
+            best_r2 = r2
+            best_r2_epoch = epoch
+        
+
+        if save_model == True and dir_path != None:
+            os.makedirs(dir_path, exist_ok=True)
+            torch.save(model.state_dict(), f'{dir_path}/model_epoch_{epoch}.pth')
+
+        # Check if test loss improved
+        if avg_val_loss_by_batch < best_val_loss:
+            best_val_loss = avg_val_loss_by_batch
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
+        # Check if early stopping is triggered
+        if epochs_no_improve == patience:
+            print(f"Early stopping triggered at epoch {epoch + 1}")
+            early_stop = True
+            break
+
+    if save_model == True and dir_path != None:
+        with open(f'{dir_path}/train_losses.pkl', 'wb') as f:
+            pickle.dump(train_losses, f)
+        with open(f'{dir_path}/test_losses.pkl', 'wb') as f:
+            pickle.dump(val_losses, f)
+        with open(f'{dir_path}/test_losses_by_batch.pkl', 'wb') as f:
+            pickle.dump(val_losses_by_batch, f)
+        with open(f'{dir_path}/train_losses_by_batch.pkl', 'wb') as f:
+            pickle.dump(train_losses_by_batch, f)
+        with open(f'{dir_path}/metric_results.pkl', 'wb') as f:
+            pickle.dump(results, f)
+
+    print(f"Finished Training!")
+    print(f"Best Pearson Correlation is {best_pearson} at epoch {best_pearson_epoch}")
+    print(f"Best R2 Square Correlation is {best_r2} at epoch {best_r2_epoch}")
+
+    #############
+    # Deleting models in the output directory, except the model at best_pearson and best_r2 epoch respectively
+    # Get list of all .pth files in the directory
+    model_files = glob.glob(f'{dir_path}/*.pth')
+    pearson_metrics, r2_metrics = None, None
+    print('\n')
+    print('*** Deleting model paths ***')
+    # Loop through all model files
+    for model_file in model_files:
+        # Extract the epoch number from the file name
+        file_name = os.path.basename(model_file)
+        epoch = int(file_name.split('_')[-1].split('.')[0])
+
+        if epoch == best_pearson_epoch:
+            print(f"Evaluating model at best Pearson epoch: {best_pearson_epoch}")
+            model.load_state_dict(torch.load(model_file))
+            model.to(device)
+            model.eval()
+            pearson_metrics = evaluate_regression_model(model, test_loader, device)
+
+            # Rename to 'best_pearson_model_epoch_{epoch}.pth'
+            print(f"Model at best_pearson_epoch: {best_pearson_epoch} is saved as best_pearson_model")
+            new_name = f'{dir_path}/best_pearson_model_epoch_{epoch}.pth'
+            os.rename(model_file, new_name)
+
+        if epoch == best_r2_epoch:
+            print(f"Evaluating model at best R2 epoch: {best_r2_epoch}")
+            model.load_state_dict(torch.load(model_file))
+            model.to(device)
+            model.eval()
+            r2_metrics = evaluate_regression_model(model, test_loader, device)
+
+            # Rename to 'best_r2_model_epoch_{epoch}.pth'
+            print(f"Model at best_r2_epoch: {best_r2_epoch} is saved as best_r2_model")
+            new_name = f'{dir_path}/best_r2_model_epoch_{epoch}.pth'
+            os.rename(model_file, new_name)
+
+        # If it's neither of the best epochs, delete the file
+        if epoch != best_pearson_epoch and epoch != best_r2_epoch:
+            os.remove(model_file)
+
+        #############
+
+    return train_losses, val_losses, model, train_losses_by_batch, val_losses_by_batch,results, best_pearson_epoch, best_r2_epoch, pearson_metrics, r2_metrics, device
+
+
+def train_model_old(model, train_loader, test_loader, target_labels, num_epochs=100, batch_size=10, learning_rate=1e-6, criteria = 'mse',optimizer_type = "adam",patience=10, seed = 42, save_model = False, dir_path = None):
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
@@ -420,7 +761,7 @@ def train_model(model, train_loader, test_loader, target_labels, num_epochs=100,
         model.train()
         train_loss = 0
         n_total_steps = len(train_loader)
-        for i, (inputs, labels) in enumerate(train_loader):
+        for i, (inputs, labels, fragment_ids) in enumerate(train_loader):
             inputs, labels = inputs.to(device), labels.to(device)
             # Forward pass
             outputs = model(inputs)
@@ -560,7 +901,7 @@ def evaluate_regression_model(model, test_loader, device):
     actuals = []
     
     with torch.no_grad():
-        for inputs, labels in test_loader:
+        for inputs, labels, fragment_ids in test_loader:
             inputs = inputs.to(device)
             outputs = model(inputs).cpu().numpy()
             predictions.append(outputs)
@@ -638,7 +979,7 @@ def regression_model_plot(model, test_loader, train_losses_by_batch, test_losses
     predict_value_dict = {target: [] for target in target_labels}
     
     with torch.no_grad():
-        for inputs, labels in test_loader:
+        for inputs, labels, fragment_ids in test_loader:
             inputs = inputs.to(device)
             outputs = model(inputs).cpu().numpy()  # Get predictions
             
