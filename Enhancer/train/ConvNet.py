@@ -82,7 +82,7 @@ for seed in seeds:
                 print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")
 
                 _, _, model, train_losses_by_batch, test_losses_by_batch, results, best_pearson_epoch, best_r2_epoch,  pearson_metrics, r2_metrics, device  = train_model(
-                    input_model, train_loader, val_loader, target_labels=target_labels, num_epochs=200, batch_size=batch, learning_rate=learning_rate, 
+                    input_model, train_loader, val_loader, test_loader,target_labels=target_labels, num_epochs=200, batch_size=batch, learning_rate=learning_rate, 
                     criteria='mse',optimizer_type = "adam", patience=15, seed = seed, save_model= False, dir_path=output_dir)
                 
                 # Saving all metrics for best r2 model and pearson model respectively

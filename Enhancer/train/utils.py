@@ -1,4 +1,5 @@
 import csv
+import shutil
 from typing import Dict, Tuple
 import pandas as pd
 from Bio import SeqIO
@@ -593,9 +594,8 @@ def train_model(model, train_loader, val_loader, test_loader, target_labels, num
             best_r2_epoch = epoch
         
 
-        if save_model == True and dir_path != None:
-            os.makedirs(dir_path, exist_ok=True)
-            torch.save(model.state_dict(), f'{dir_path}/model_epoch_{epoch}.pth')
+        os.makedirs(dir_path, exist_ok=True)
+        torch.save(model.state_dict(), f'{dir_path}/model_epoch_{epoch}.pth')
 
         # Check if test loss improved
         if avg_val_loss_by_batch < best_val_loss:
@@ -633,41 +633,45 @@ def train_model(model, train_loader, val_loader, test_loader, target_labels, num
     pearson_metrics, r2_metrics = None, None
     print('\n')
     print('*** Deleting model paths ***')
-    # Loop through all model files
+    # Loop through all model files and process based on best epochs
     for model_file in model_files:
-        # Extract the epoch number from the file name
         file_name = os.path.basename(model_file)
         epoch = int(file_name.split('_')[-1].split('.')[0])
 
-        if epoch == best_pearson_epoch:
-            print(f"Evaluating model at best Pearson epoch: {best_pearson_epoch}")
+        if epoch in [best_pearson_epoch, best_r2_epoch]:
+            # Determine if this is the best Pearson or R2 model
+            label = "best_pearson" if epoch == best_pearson_epoch else "best_r2"
+            print(f"Evaluating model at {label} epoch: {epoch}")
+            
+            # Load model and evaluate
             model.load_state_dict(torch.load(model_file))
             model.to(device)
             model.eval()
-            pearson_metrics = evaluate_regression_model(model, test_loader, device)
+            metrics = evaluate_regression_model(model, test_loader, device)
 
-            # Rename to 'best_pearson_model_epoch_{epoch}.pth'
-            print(f"Model at best_pearson_epoch: {best_pearson_epoch} is saved as best_pearson_model")
-            new_name = f'{dir_path}/best_pearson_model_epoch_{epoch}.pth'
+            # Rename based on whether it's best Pearson, R2, or both
+            new_name = f'{dir_path}/{label}_model_epoch_{epoch}.pth'
             os.rename(model_file, new_name)
+            print(f"Model at {label} epoch {epoch} is saved as {label}_model")
+            
+            # Assign metrics
+            if epoch == best_pearson_epoch:
+                pearson_metrics = metrics
+            if epoch == best_r2_epoch:
+                r2_metrics = metrics
 
-        if epoch == best_r2_epoch:
-            print(f"Evaluating model at best R2 epoch: {best_r2_epoch}")
-            model.load_state_dict(torch.load(model_file))
-            model.to(device)
-            model.eval()
-            r2_metrics = evaluate_regression_model(model, test_loader, device)
-
-            # Rename to 'best_r2_model_epoch_{epoch}.pth'
-            print(f"Model at best_r2_epoch: {best_r2_epoch} is saved as best_r2_model")
-            new_name = f'{dir_path}/best_r2_model_epoch_{epoch}.pth'
-            os.rename(model_file, new_name)
-
-        # If it's neither of the best epochs, delete the file
-        if epoch != best_pearson_epoch and epoch != best_r2_epoch:
+        else:
             os.remove(model_file)
-
         #############
+    # Clear out directory if save_model is False
+    if not save_model:
+        for item in os.listdir(dir_path):
+            path = os.path.join(dir_path, item)
+            if os.path.isfile(path) or os.path.islink(path):
+                os.remove(path)
+            elif os.path.isdir(path):
+                shutil.rmtree(path)
+        print(f"All contents in {dir_path} have been deleted as save_model is set to False.")
 
     return train_losses, val_losses, model, train_losses_by_batch, val_losses_by_batch,results, best_pearson_epoch, best_r2_epoch, pearson_metrics, r2_metrics, device
 
