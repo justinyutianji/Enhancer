@@ -451,4 +451,4 @@ def plot_unit_importance(unit_importance_values, unit_names, title_suffix, dir_s
     plt.savefig(plot_filename)
     print(f'Saved unit importance plot for {title_suffix} at {plot_filename}')
     plt.close()
-    return list(sorted_names)
+    return list(sorted_names), list(sorted_means)

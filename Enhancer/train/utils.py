@@ -457,7 +457,7 @@ def evaluate_model(model, test_loader, batch_size, criterion, device):
         avg_test_loss_by_batch = test_loss / len(test_loader)
     return avg_test_loss, avg_test_loss_by_batch
 
-def train_model(model, train_loader, val_loader, test_loader, target_labels, num_epochs=100, batch_size=10, learning_rate=1e-6, criteria = 'mse',optimizer_type = "adam",patience=10, seed = 42, save_model = False, dir_path = None):
+def train_model(model, train_loader, val_loader, test_loader, target_labels, num_epochs=100, batch_size=10, learning_rate=1e-6, criteria = 'mse',optimizer_type = "adam",patience=10, seed = 42, save_data = False, save_model = False, dir_path = None):
     if seed is not None:
         random.seed(seed)
         np.random.seed(seed)
@@ -610,7 +610,7 @@ def train_model(model, train_loader, val_loader, test_loader, target_labels, num
             early_stop = True
             break
 
-    if save_model == True and dir_path != None:
+    if save_data == True and dir_path != None:
         with open(f'{dir_path}/train_losses.pkl', 'wb') as f:
             pickle.dump(train_losses, f)
         with open(f'{dir_path}/test_losses.pkl', 'wb') as f:

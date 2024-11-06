@@ -49,13 +49,15 @@ cnns = []
 
 seeds = [random.randint(1, 1000) for _ in range(5)]
 seeds_cnn = seeds[:3]
+print(seeds_cnn)
 batches = [96,168]
-num_cnns = list(range(10, 131, 10))
+num_cnns = list(range(5, 101, 5))
+
 dropout = 0.3
 lrs = [1e-4, 5e-4, 1e-3]
 target_labels = ["GFP+","GFP-"]
 
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_G+G-'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_G+G-1'
 os.makedirs(output_dir, exist_ok=True)
 # Save the R_square results to a CSV file
 filename = os.path.join(output_dir, 'ExplaiNN3_G+G-_Metrics.csv')
@@ -107,6 +109,7 @@ for seed in seeds_cnn:
                 dropout_list.append(dropout)
                 best_pearson_epochs.append(best_pearson_epoch)
                 best_r2_epochs.append(best_r2_epoch)
+                cnns.append(cnn)
 
 results_df = pd.DataFrame({
     "num_cnns": cnns,
@@ -221,6 +224,7 @@ for seed in seeds:
                 dropout_list.append(dropout)
                 best_pearson_epochs.append(best_pearson_epoch)
                 best_r2_epochs.append(best_r2_epoch)
+                cnns.append(cnn)
 
 results_df = pd.DataFrame({
     "batch": batch_list,

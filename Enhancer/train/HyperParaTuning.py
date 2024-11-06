@@ -50,7 +50,7 @@ cnns = []
 seeds = [random.randint(1, 1000) for _ in range(5)]
 seeds_cnn = seeds[:3]
 batches = [96,168]
-num_cnns = list(range(10, 131, 10))
+num_cnns = list(range(5, 131, 5))
 dropout = 0.3
 lrs = [1e-4, 5e-4, 1e-3]
 target_labels = ['GFP']
@@ -107,6 +107,7 @@ for seed in seeds_cnn:
                 dropout_list.append(dropout)
                 best_pearson_epochs.append(best_pearson_epoch)
                 best_r2_epochs.append(best_r2_epoch)
+                cnns.append(cnn)
 
 results_df = pd.DataFrame({
     "num_cnns": cnns,
