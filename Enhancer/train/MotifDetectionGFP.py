@@ -17,8 +17,8 @@ import random
 sys.path.append('../model')  
 from model import ConvNetDeep, DanQ, ExplaiNN,ConvNetDeep2, ExplaiNN2, ExplaiNN3,DeepSTARR
 
-params = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_GFP/combined_file.csv')
-cnns = list(range(10, 101, 5))
+params = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_GFP/ExplaiNN3_GFP_Metrics.csv')
+cnns = list(range(10, 71, 5))
 target_labels = ["GFP"]
 feature_list = ["GFP"]
 
@@ -123,6 +123,6 @@ for cnn in cnns:
 output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_GFP_Pred'
 for label, data in final_data.items():
     label_df = pd.DataFrame(data)
-    output_file = os.path.join(output_dir, f'{label}_combined_tf_importance.csv')
+    output_file = os.path.join(output_dir, f'{label}_combined_tf_importance_0_70.csv')
     label_df.to_csv(output_file, index=False)
     print(f"Saved combined TF importance data for {label} to {output_file}")
