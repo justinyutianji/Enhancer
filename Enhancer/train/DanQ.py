@@ -19,12 +19,12 @@ from model import DanQ, ConvNetDeep,DeepSTARR
 
 #-------------------------------------
 #*********Train DANQ************
-#************Predict GFP+ and GFP-**************
+#************Predict GFP**************
 #-------------------------------------
 
 
 # Load the dataset
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/input_data.csv')
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
 
 #seeds = [random.randint(0, 2**32 - 1) for _ in range(3)]
 # Initialize the R_square list
@@ -170,7 +170,7 @@ print(f"Metric values saved to {filename}")
 
 
 # Load the dataset
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/input_data.csv')
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
 
 #seeds = [random.randint(0, 2**32 - 1) for _ in range(3)]
 # Initialize the R_square list
@@ -286,7 +286,7 @@ print(f"R_square values saved to {filename}")
 
 
 # Load the dataset
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/input_data.csv')
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
 
 # Initialize the R_square list
 seed_list = []

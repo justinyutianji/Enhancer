@@ -18,7 +18,7 @@ from model import  DanQ, ConvNetDeep, DeepSTARR, ExplaiNN3
 
 #-------------------------------------
 #*********Train ExplaiNN************
-#************Predict GFP+ and GFP-**************
+#************Predict GFP**************
 #-------------------------------------
 # Load the dataset
 df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
@@ -49,27 +49,25 @@ cnns = []
 
 seeds = [random.randint(1, 1000) for _ in range(5)]
 seeds_cnn = seeds[:3]
-print(seeds_cnn)
 batches = [96,168]
-num_cnns = list(range(5, 101, 5))
-
+num_cnns = list(range(5, 131, 5))
 dropout = 0.3
 lrs = [1e-4, 5e-4, 1e-3]
-target_labels = ["GFP+","GFP-"]
+target_labels = ['GFP']
 
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_G+G-1'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_GFP'
 os.makedirs(output_dir, exist_ok=True)
 # Save the R_square results to a CSV file
-filename = os.path.join(output_dir, 'ExplaiNN3_G+G-_Metrics.csv')
+filename = os.path.join(output_dir, 'ExplaiNN3_GFP_Metrics.csv')
 # Split the dataset
 for seed in seeds_cnn: 
     for batch in batches:
         for cnn in num_cnns:
             train_df, val_df, test_df = split_dataset(df, split_type='random', split_pattern=[0.7, 0.15, 0.15], seed=seed)
 
-            train = EnhancerDatasetWithID(train_df, feature_list=['G+','G-'], scale_mode='none')
-            val = EnhancerDatasetWithID(val_df, feature_list=['G+','G-'], scale_mode='none')
-            test = EnhancerDatasetWithID(test_df, feature_list=['G+','G-'], scale_mode='none')
+            train = EnhancerDatasetWithID(train_df, feature_list=['GFP'], scale_mode='none')
+            val = EnhancerDatasetWithID(val_df, feature_list=['GFP'], scale_mode='none')
+            test = EnhancerDatasetWithID(test_df, feature_list=['GFP'], scale_mode='none')
 
             # DataLoader setup
             train_loader = DataLoader(dataset=train, batch_size=batch, shuffle=True)
@@ -77,7 +75,7 @@ for seed in seeds_cnn:
             test_loader = DataLoader(dataset=test, batch_size=batch, shuffle=False)
 
             # Hyperparameter search
-            input_model = ExplaiNN3(num_cnns = cnn, input_length = 608, num_classes = 2, 
+            input_model = ExplaiNN3(num_cnns = cnn, input_length = 608, num_classes = 1, 
                 filter_size = 19, num_fc=2, pool_size=7, pool_stride=7, 
                 drop_out = 0.3, weight_path = None)# Training
 
@@ -138,7 +136,7 @@ print(f"R_square values saved to {filename}")
 
 #-------------------------------------
 #*********Train ConvNetDeep************
-#************Predict GFP+ and GFP-**************
+#************Predict GFP**************
 #-------------------------------------
 
 
@@ -168,13 +166,14 @@ spearman_corr_list_r = []
 best_pearson_epochs = []
 best_r2_epochs = []
 
+target_labels = ['GFP']
 batches = [96,168,322]
 learning_rates = [1e-4, 5e-4,1e-3,5e-3]
 
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ConvNetDeep_G+G-'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ConvNetDeep_GFP'
 os.makedirs(output_dir, exist_ok=True)
 # Save the R_square results to a CSV file
-filename = os.path.join(output_dir, 'ConvNetDeep_G+G-_Metrics.csv')
+filename = os.path.join(output_dir, 'ConvNetDeep_GFP_Metrics.csv')
 
 # Split the dataset
 for seed in seeds: 
@@ -182,9 +181,9 @@ for seed in seeds:
         train_df, val_df, test_df = split_dataset(df, split_type='random', split_pattern=[0.7, 0.15, 0.15], seed=seed)
 
         # Process datasets
-        train = EnhancerDatasetWithID(train_df, feature_list=['G+','G-'], scale_mode='none')
-        val = EnhancerDatasetWithID(val_df, feature_list=['G+','G-'], scale_mode='none')
-        test = EnhancerDatasetWithID(test_df, feature_list=['G+','G-'], scale_mode='none')
+        train = EnhancerDatasetWithID(train_df, feature_list=['GFP'], scale_mode='none')
+        val = EnhancerDatasetWithID(val_df, feature_list=['GFP'], scale_mode='none')
+        test = EnhancerDatasetWithID(test_df, feature_list=['GFP'], scale_mode='none')
 
         # DataLoader setup
         train_loader = DataLoader(dataset=train, batch_size=batch, shuffle=True)
@@ -194,7 +193,7 @@ for seed in seeds:
         # Hyperparameter search
         for dropout in [0.3]:
             # Model setup
-            input_model = ConvNetDeep(num_classes=2, drop_out=dropout)
+            input_model = ConvNetDeep(num_classes=1, drop_out=dropout)
             for learning_rate in learning_rates:
                 formatted_lr = "{:.5f}".format(learning_rate)
                 print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")
@@ -224,7 +223,6 @@ for seed in seeds:
                 dropout_list.append(dropout)
                 best_pearson_epochs.append(best_pearson_epoch)
                 best_r2_epochs.append(best_r2_epoch)
-                cnns.append(cnn)
 
 results_df = pd.DataFrame({
     "batch": batch_list,
@@ -252,7 +250,7 @@ print(f"R_square values saved to {filename}")
 
 #-------------------------------------
 #*********Train DANQ************
-#************Predict GFP+ and GFP-**************
+#************Predict GFP**************
 #-------------------------------------
 
 
@@ -280,20 +278,21 @@ spearman_corr_list_r = []
 best_pearson_epochs = []
 best_r2_epochs = []
 
+target_labels = ['GFP']
 
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/DanQ_G+G-'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/DanQ_GFP'
 os.makedirs(output_dir, exist_ok=True)
 # Save the R_square results to a CSV file
-filename = os.path.join(output_dir, 'DanQ_G+G-_Metrics.csv')
+filename = os.path.join(output_dir, 'DanQ_GFP_Metrics.csv')
 
 # Split the dataset
 for seed in seeds: 
     for batch in batches:
         train_df, val_df, test_df = split_dataset(df, split_type='random', split_pattern=[0.7, 0.15, 0.15], seed=seed)
 
-        train = EnhancerDatasetWithID(train_df, feature_list=['G+','G-'], scale_mode='none')
-        val = EnhancerDatasetWithID(val_df, feature_list=['G+','G-'], scale_mode='none')
-        test = EnhancerDatasetWithID(test_df, feature_list=['G+','G-'], scale_mode='none')
+        train = EnhancerDatasetWithID(train_df, feature_list=['GFP'], scale_mode='none')
+        val = EnhancerDatasetWithID(val_df, feature_list=['GFP'], scale_mode='none')
+        test = EnhancerDatasetWithID(test_df, feature_list=['GFP'], scale_mode='none')
 
         # DataLoader setup
         train_loader = DataLoader(dataset=train, batch_size=batch, shuffle=True)
@@ -303,7 +302,7 @@ for seed in seeds:
         # Hyperparameter search
         for dropout in [0.3]:
             # Model setup
-            input_model = DanQ(input_length = 608, num_classes = 2)
+            input_model = DanQ(input_length = 608, num_classes = 1)
             for learning_rate in learning_rates:
                 formatted_lr = "{:.5f}".format(learning_rate)
                 print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")
@@ -388,7 +387,7 @@ print(f"Metric values saved to {filename}")
 
 #-------------------------------------
 #*********Train DeepSTARR************
-#************Predict GFP+ and GFP-**************
+#************Predict GFP**************
 #-------------------------------------
 
 # Initialize the R_square list
@@ -415,20 +414,21 @@ best_pearson_epochs = []
 best_r2_epochs = []
 
 
+target_labels = ['GFP']
 
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/DeepSTARR_G+G-'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/DeepSTARR_GFP'
 os.makedirs(output_dir, exist_ok=True)
 # Save the R_square results to a CSV file
-filename = os.path.join(output_dir, 'DeepSTARR_G+G-_Metrics.csv')
+filename = os.path.join(output_dir, 'DeepSTARR_GFP_Metrics.csv')
 
 # Split the dataset
 for seed in seeds: 
     for batch in batches:
         train_df, val_df, test_df = split_dataset(df, split_type='random', split_pattern=[0.7, 0.15, 0.15], seed=seed)
 
-        train = EnhancerDatasetWithID(train_df, feature_list=['G+','G-'], scale_mode='none')
-        val = EnhancerDatasetWithID(val_df, feature_list=['G+','G-'], scale_mode='none')
-        test = EnhancerDatasetWithID(test_df, feature_list=['G+','G-'], scale_mode='none')
+        train = EnhancerDatasetWithID(train_df, feature_list=['GFP'], scale_mode='none')
+        val = EnhancerDatasetWithID(val_df, feature_list=['GFP'], scale_mode='none')
+        test = EnhancerDatasetWithID(test_df, feature_list=['GFP'], scale_mode='none')
 
         # DataLoader setup
         train_loader = DataLoader(dataset=train, batch_size=batch, shuffle=True)
@@ -438,7 +438,7 @@ for seed in seeds:
         # Hyperparameter search
         for dropout in [0.3]:
             # Model setup
-            input_model = DeepSTARR(num_classes = 2)
+            input_model = DeepSTARR(num_classes = 1)
             for learning_rate in learning_rates:
                 formatted_lr = "{:.5f}".format(learning_rate)
                 print(f"dropout{dropout}_ba{batch}_lr{formatted_lr}_seed{seed}")

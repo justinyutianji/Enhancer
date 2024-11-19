@@ -23,7 +23,7 @@ from model import ConvNetDeep
 
 
 # Load the dataset
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_input_data.csv')
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
 
 # Initialize the R_square list
 seed_list = []
