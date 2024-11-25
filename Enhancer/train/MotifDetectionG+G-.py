@@ -17,16 +17,17 @@ import random
 sys.path.append('../model')  
 from model import ConvNetDeep, DanQ, ExplaiNN,ConvNetDeep2, ExplaiNN2, ExplaiNN3,DeepSTARR
 
-params = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_G+G-/ExplaiNN3_G+G-_Metrics.csv')
-cnns = list(range(10, 101, 5))
+params = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN/ExplaiNN3_G+G-_Metrics.csv')
+#cnns = list(range(10, 101, 5))
+cnns = [80, 85, 90, 95, 100]
 target_labels = ["GFP+", "GFP-"]
 feature_list = ["G+", "G-"]
 
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_input_data.csv')
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
 # Data frame that stores the final results
 final_data = {label: [] for label in target_labels}
-seeds = [random.randint(1, 1000) for _ in range(4)]
-
+#seeds = [random.randint(1, 1000) for _ in range(4)]
+seeds = [116,234,520,732]
 # Loop over each CNN configuration
 for cnn in cnns:
     
@@ -46,7 +47,7 @@ for cnn in cnns:
     new_seeds = seeds + [best_seed]
     for seed in new_seeds:
 
-        output_dir = f'/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_G+G-_Pred/CNN{num_cnns}_Seed{seed}'
+        output_dir = f'/pmglocal/ty2514/Enhancer/Enhancer/data/Interpret_ExplaiNN_G+G-/CNN{num_cnns}_Seed{seed}'
 
         print(f'\ncnn: {num_cnns}, lr: {best_lr}, drop_out: {best_dropout}, batch: {best_batch}, seed: {seed}\n')
 
@@ -89,11 +90,13 @@ for cnn in cnns:
                 tf_filters = tf_filters.iloc[:,:10]
 
                 tf_names = tf_filters['tf_name'].tolist()
+                unit_samples = tf_filters['activated_samples'].tolist()
                 importance_scores = tf_filters['importance_score'].tolist()
                 row_data = {'num_cnn': num_cnns, 'seed': seed}
                 for i in range(10):
                     row_data[f'tf{i+1}'] = tf_names[i]
                     row_data[f'score{i+1}'] = importance_scores[i]
+                    row_data[f'sample{i+1}'] = unit_samples[i]
                 final_data[label].append(row_data)
 
         # Cleanup step to retain only CSV files (tf_files) and delete all other files, including .pth model files
@@ -120,7 +123,7 @@ for cnn in cnns:
 
 
 # Convert each label's data list into a DataFrame and save as CSV
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_G+G-_Pred'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/Interpret_ExplaiNN_G+G-'
 for label, data in final_data.items():
     label_df = pd.DataFrame(data)
     output_file = os.path.join(output_dir, f'{label}_combined_tf_importance.csv')

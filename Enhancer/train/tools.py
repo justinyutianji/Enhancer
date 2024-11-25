@@ -390,28 +390,34 @@ def plot_unit_importance(unit_importance_values, unit_names, title_suffix, dir_s
     else:
         plt.figure(figsize=(8, math.ceil(0.2 * num_cnns)))
 
-    # Calculate the means of each list in unit_importance_values
+    # Calculate the means and lengths of each list in unit_importance_values
     means = [np.mean(values) for values in unit_importance_values]
+    unit_samples = [len(values) for values in unit_importance_values]
 
-    # Create tuples of means, unit names, and values, then sort them by means
-    sorted_data = sorted(zip(means, unit_names, unit_importance_values), key=lambda x: x[0], reverse=True)
+    # Create tuples of means, unit names, unit_samples, and values, then sort by means
+    sorted_data = sorted(zip(means, unit_names, unit_samples, unit_importance_values), key=lambda x: x[0], reverse=True)
 
     # Unzip the sorted data
-    sorted_means, sorted_names, sorted_values = zip(*sorted_data)
+    sorted_means, sorted_names, sorted_unit_samples, sorted_values = zip(*sorted_data)
 
     # Filter if annotated_filter_only is True
     if annotated_filter_only:
-        filtered_data = [(mean, name, values) for mean, name, values in zip(sorted_means, sorted_names, sorted_values) if '-' in name]
+        filtered_data = [
+            (mean, name, unit_sample, values)
+            for mean, name, unit_sample, values in zip(sorted_means, sorted_names, sorted_unit_samples, sorted_values)
+            if '-' in name
+        ]
         if filtered_data:
-            sorted_means, sorted_names, sorted_values = zip(*filtered_data)
+            sorted_means, sorted_names, sorted_unit_samples, sorted_values = zip(*filtered_data)
             plt.figure(figsize=(8, math.ceil(0.15 * len(sorted_means))))
         else:
-            sorted_means, sorted_names, sorted_values = [], [], []
+            sorted_means, sorted_names, sorted_unit_samples, sorted_values = [], [], [], []
 
     # Limit the number of samples plotted if num_tf_plotted is provided and not False
     if num_tf_plotted and isinstance(num_tf_plotted, int):
         sorted_means = sorted_means[:num_tf_plotted]
         sorted_names = sorted_names[:num_tf_plotted]
+        sorted_unit_samples = sorted_unit_samples[:num_tf_plotted]
         sorted_values = sorted_values[:num_tf_plotted]
 
     # Define properties for outliers (fliers)
@@ -426,29 +432,29 @@ def plot_unit_importance(unit_importance_values, unit_names, title_suffix, dir_s
 
     # Set custom sorted y-axis labels
     plt.gca().set_yticks(range(1, len(sorted_names) + 1))  # Setting y-ticks
-    plt.gca().set_yticklabels(sorted_names, rotation=0,fontsize = 14)  # Setting y-tick labels
+    plt.gca().set_yticklabels(sorted_names, rotation=0, fontsize=14)  # Setting y-tick labels
 
     # Invert the y-axis so the largest mean is on top
     plt.gca().invert_yaxis()
 
     # Set title and axis labels
-    #plt.title(f"Unit Importance of Each Filter on Predicting {title_suffix}")
-    plt.xlabel("Importance Values",fontsize = 14)
+    plt.xlabel("Importance Values", fontsize=14)
     
     # Adjust layout and show plot
     plt.tight_layout()
     
     if annotated_filter_only and num_tf_plotted and isinstance(num_tf_plotted, int):
         plot_filename = f'{dir_save_plot}/top{num_tf_plotted}_annotated_filter_unit_importance_{title_suffix}.png'
-    elif annotated_filter_only and num_tf_plotted == False:
+    elif annotated_filter_only and not num_tf_plotted:
         plot_filename = f'{dir_save_plot}/annotated_filter_unit_importance_{title_suffix}.png'
-    elif annotated_filter_only == False and num_tf_plotted and isinstance(num_tf_plotted, int):
+    elif not annotated_filter_only and num_tf_plotted and isinstance(num_tf_plotted, int):
         plot_filename = f'{dir_save_plot}/top{num_tf_plotted}_filter_unit_importance_{title_suffix}.png'
     else:
         plot_filename = f'{dir_save_plot}/filter_unit_importance_{title_suffix}.png'
 
-
     plt.savefig(plot_filename)
     print(f'Saved unit importance plot for {title_suffix} at {plot_filename}')
     plt.close()
-    return list(sorted_names), list(sorted_means)
+
+    # Return sorted names, means, and unit_samples
+    return list(sorted_names), list(sorted_means), list(sorted_unit_samples)

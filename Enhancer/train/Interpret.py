@@ -43,7 +43,7 @@ parser.add_argument('--target_labels', type=json.loads, required=True, help="Nam
 
 
 # Optional arguments with default values
-parser.add_argument('--input_data_dir', type=str, default='/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_input_data.csv', help="Input data directory")
+parser.add_argument('--input_data_dir', type=str, default='/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv', help="Input data directory")
 parser.add_argument('--filter_size', type=int, default=19, help="Filter size for the model")
 parser.add_argument('--upper_bound', type=float, default=0.25, help="Upper bound for cutoff")
 parser.add_argument('--save_cutoff_plot', type=bool, default=True, help="Whether to save the cutoff plot")
@@ -397,8 +397,8 @@ print('\n')
 print('Plotting Unit Importance Plot')
 unit_names = list(weight_df.columns)
 for label in args.target_labels:
-    _, _ = plot_unit_importance(importance_dict[label], unit_names, label, dir_save_plot = importance_result_dir, annotated_filter_only=True, num_tf_plotted=10)
-    sorted_filters, sorted_values = plot_unit_importance(importance_dict[label], unit_names, label, dir_save_plot = importance_result_dir, annotated_filter_only=False, num_tf_plotted=False)
+    _, _, _ = plot_unit_importance(importance_dict[label], unit_names, label, dir_save_plot = importance_result_dir, annotated_filter_only=True, num_tf_plotted=10)
+    sorted_filters, sorted_values, sorted_unit_samples = plot_unit_importance(importance_dict[label], unit_names, label, dir_save_plot = importance_result_dir, annotated_filter_only=False, num_tf_plotted=False)
     # Save sorted_names to a plain text file
     #sorted_tf_order_file = os.path.join(importance_result_dir, f'{label}_sorted_tf_order.txt')
     #with open(sorted_tf_order_file, 'w') as f:
@@ -407,7 +407,7 @@ for label in args.target_labels:
 
     # Save sorted_filters and sorted_values to a CSV file
     sorted_tf_order_file = os.path.join(importance_result_dir, f'{label}_sorted_tf_order.csv')
-    sorted_df = pd.DataFrame({'tf_name': sorted_filters, 'importance_score': sorted_values})
+    sorted_df = pd.DataFrame({'tf_name': sorted_filters, 'importance_score': sorted_values,'activated_samples': sorted_unit_samples})
     sorted_df.to_csv(sorted_tf_order_file, index=False)
 
 print('Finish!')

@@ -17,12 +17,12 @@ import random
 sys.path.append('../model')  
 from model import ConvNetDeep, DanQ, ExplaiNN,ConvNetDeep2, ExplaiNN2, ExplaiNN3,DeepSTARR
 
-params = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN3_GFP/ExplaiNN3_GFP_Metrics.csv')
-cnns = list(range(10, 71, 5))
+params = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN/ExplaiNN3_GFP_Metrics.csv')
+cnns = list(range(10, 101, 5))
 target_labels = ["GFP"]
 feature_list = ["GFP"]
 
-df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_input_data.csv')
+df = pd.read_csv('/pmglocal/ty2514/Enhancer/Enhancer/data/filtered_merged_data.csv')
 # Data frame that stores the final results
 final_data = {label: [] for label in target_labels}
 seeds = [random.randint(1, 1000) for _ in range(4)]
@@ -46,7 +46,7 @@ for cnn in cnns:
     new_seeds = seeds + [best_seed]
     for seed in new_seeds:
 
-        output_dir = f'/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_GFP_Pred/CNN{num_cnns}_Seed{seed}'
+        output_dir = f'/pmglocal/ty2514/Enhancer/Enhancer/data/Interpret_ExplaiNN_GFP/CNN{num_cnns}_Seed{seed}'
 
         print(f'\ncnn: {num_cnns}, lr: {best_lr}, drop_out: {best_dropout}, batch: {best_batch}, seed: {seed}\n')
 
@@ -120,7 +120,7 @@ for cnn in cnns:
 
 
 # Convert each label's data list into a DataFrame and save as CSV
-output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/ExplaiNN_GFP_Pred'
+output_dir = '/pmglocal/ty2514/Enhancer/Enhancer/data/Interpret_ExplaiNN_GFP'
 for label, data in final_data.items():
     label_df = pd.DataFrame(data)
     output_file = os.path.join(output_dir, f'{label}_combined_tf_importance_0_70.csv')
