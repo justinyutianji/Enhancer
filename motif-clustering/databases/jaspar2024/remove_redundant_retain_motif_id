@@ -1,0 +1,35 @@
+cat JASPAR2024_CORE_vertebrates_mus_musculus_redundant_pfms_meme.txt \
+| awk '
+BEGIN {
+    # Initialize an empty array to store substrings
+    split("", substrings);
+}
+$1 == "MOTIF" {
+    third_word = $3;
+    if (third_word != "") {
+        # Extract substring before the "."
+        split(third_word, parts, ".");
+        substr_before_dot = parts[1];
+
+        # Check if the substring exists in the array
+        if (substr_before_dot in substrings) {
+            exclude = 1;
+        } else {
+            exclude = 0;
+            substrings[substr_before_dot] = 1;  # Add the substring to the array
+            print $0;  # Print the entire MOTIF line
+        }
+    } else {
+        exclude = 0;
+        print $0;  # Print the entire MOTIF line
+    }
+    next;
+}
+exclude { 
+    next;  # Skip lines for excluded motifs
+}
+{
+    if (!exclude) {
+        print;  # Print all other lines for included motifs
+    }
+}' > JASPAR2024_CORE_vertebrates_mus_musculus_non-redundant_pfms_with_id.meme
