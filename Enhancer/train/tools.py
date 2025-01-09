@@ -8,6 +8,7 @@ from tqdm import tqdm
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import math
+import pandas as pd
 
 # =============================================================================
 # FUNCTIONS
@@ -458,3 +459,106 @@ def plot_unit_importance(unit_importance_values, unit_names, title_suffix, dir_s
 
     # Return sorted names, means, and unit_samples
     return list(sorted_names), list(sorted_means), list(sorted_unit_samples)
+
+### Define functions for calculating recursive attributions
+def _recursive_seqlets_attr(attributions, threshold=0.01, seqlet_len=19, 
+	additional_flanks=0):
+	"""An internal function implementing the recursive seqlet algorithm."""
+
+	n, l = attributions.shape
+
+	X_cdfs = np.zeros(1000, dtype=np.float64)
+
+	xmin, xmax = 0.0, 0.0
+	n_pos, n_neg = 0.0, 0.0
+	for i in range(n):
+		for k in range(l):
+			x_ = attributions[i, k]
+			if x_ > 0:
+				xmax = max(x_, xmax)
+				n_pos += 1.0
+			else:
+				xmin = min(x_, xmin)
+				n_neg += 1.0
+	#print(f'num_pos is {n_pos}, num_neg is {n_neg}')
+
+	p_pos = 1 / n_pos
+	if n_neg > 0:
+		raise ValueError(f'n_neg is {n_neg}')
+	#print(f'p_pos is {p_pos}')
+
+	for i in range(n):
+		for k in range(l):
+			x_ = attributions[i, k]
+			if x_ > 0:
+				x_int = math.floor(999 * x_ / xmax)
+				X_cdfs[x_int] += p_pos
+				#print(f'sample{i}/seqlet{k}: X_cdfs[{x_int}] += {p_pos}')
+
+	#print(f'X_cdfs[0] is {X_cdfs[0]}')
+	#print(f'X_cdfs[1] is {X_cdfs[1]}')
+	for i in range(1, 1000):
+		#print(f'for bin {i}')
+		X_cdfs[i] += X_cdfs[i-1]
+		#print(f'X_cdfs[{i}] += X_cdfs[{i-1}]')
+			
+		X_cdfs[i-1] = 1 - X_cdfs[i-1]
+		#print(f'X_cdfs[{i-1}] = 1 - X_cdfs[{i-1}]')
+
+		"""X_cdfs is the complement of CDF, which represents the p_value"""
+	X_cdfs[-1] = 1 - X_cdfs[-1]
+	#print(X_cdfs)
+	#print(X_cdfs.shape)
+		
+    ###
+	p_value = np.ones(l, dtype=np.float64)
+	seqlets = []
+	for i in range(n):
+		#for k in range(1,l):
+		for k in range(l):
+			#x_ = attributions[i, k-1]
+			x_ = attributions[i, k]
+			if x_ > 0:
+				x_int = math.floor(999 * x_ / xmax)
+				p_value[k] = X_cdfs[x_int]
+				#print(f'for sample{i}/seqlet{k}, attr is {x_}, p_value: {p_value[k]}')
+		
+		while True:
+			start = p_value.argmin()
+			p = p_value[start]
+			#print(f'minimum p_value in sample{i} is {p}, with index {start}')
+			p_value[start] = 1
+
+			if p > threshold:
+				#print(f'start is {start}, > threshold')
+				#print('p > threshold, break')
+				break
+			else:
+				#print(f'start is {start}, < threshold')
+				#print('p < threshold, continue')
+				start = max(start - additional_flanks, 0)
+				end = min(start + seqlet_len + additional_flanks, l+seqlet_len-1)
+				attr = attributions[i, start]
+				seqlets.append((i, start, end, attr, p))
+				#print(f'appennd ({i}, {start}, {end}, {attr}, {p})')
+	return seqlets
+
+def recursive_seqlets(attributions, threshold=0.01, seqlet_len=19,
+	additional_flanks=0):
+
+    if isinstance(attributions, torch.Tensor):
+        attributions = attributions.numpy()
+    elif not isinstance(attributions, np.ndarray):
+        raise ValueError("`X` must be either a torch.Tensor or numpy.ndarray.")
+    
+    columns = ['example_idx', 'start', 'end', 'attribution', 'p-value']
+    seqlets = _recursive_seqlets_attr(attributions, threshold, seqlet_len, additional_flanks)
+    seqlets = pd.DataFrame(seqlets, columns = columns)
+    return seqlets.sort_values("p-value").reset_index(drop = True)
+
+def p_value(data, values, cdf):
+    p_values = []
+    for ele in data:
+        p_values.append(1 - np.interp(ele, values, cdf))
+
+    return np.array(p_values)

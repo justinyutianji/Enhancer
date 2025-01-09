@@ -62,7 +62,7 @@ def get_explainn_predictions(data_loader, model, device, isSigmoid=False):
     running_labels = []
 
     with torch.no_grad():
-        for seq, lbl in data_loader:
+        for seq, lbl, ids in data_loader:
             seq = seq.to(device)
             out = model(seq)
             if isSigmoid:
@@ -466,6 +466,36 @@ def get_specific_unit_importance(activations, model, unit_outputs, filt, target_
         res_distr[target_labels[cl]] = f_cell[:, filt]
         res_distr[target_labels[cl]] = res_distr[target_labels[cl]][res[filt]]
 
+    res_distr = pd.Series(res_distr)
+
+    return res_distr
+
+def get_specific_unit_importance_seqlet(activated_indexes, model, unit_outputs, filt, target_labels):
+    """
+    Function to compute unit importance (unit_output*class weight) of a particular ExplaiNN unit (indexed at filt)
+    :param activated_indexes: dictionary whose keys(int) represent different CNN filter, whose values represents indexes of activated
+    sequences (rows) in the unit_outputs
+    :param model: ExplaiNN model
+    :param unit_outputs: numpy.array, outputs of individual units, shape (N, U); N - size of the dataset; U - number of units;
+    :param filt: int, index of the unit of interest;
+    :param target_labels: a list with the names of the output nodes;
+    :return: pandas.Series, contains O keys (number of ExplaiNN outputs, labels), each key contains an array of size X,
+    where X is equal to the number of sequences that activated the unit of interest (indexed at filt) more than an
+    activation threshold
+    """
+
+    # Get weights of each cnn for each predicted targets specified in the target_labels list
+    weights = model.final.weight.detach().cpu().numpy()  
+
+    res_distr = {}
+    for cl in range(len(target_labels)):
+        #print(f'unit_outputs ({unit_outputs.shape}) X weights[GFP] ({weights[cl].shape})')
+        # num_filter output of linears layers multiply weights for each num_filter of them from final layer
+        f_cell = np.multiply(unit_outputs, weights[cl])
+        #print(f'result has shape {f_cell.shape}')
+        res_distr[target_labels[cl]] = f_cell[:, filt]
+        res_distr[target_labels[cl]] = res_distr[target_labels[cl]][activated_indexes[filt]]
+ 
     res_distr = pd.Series(res_distr)
 
     return res_distr

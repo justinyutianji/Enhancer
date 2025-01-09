@@ -277,8 +277,8 @@ def split_dataset(df, split_type='random', split_pattern=None, keys=None, seed=N
     - val_set (DataFrame): The validation dataset (or None if not applicable).
     - test_set (DataFrame): The testing dataset.
     """
-    if seed is not None:
-        np.random.seed(seed)
+    if seed == None:
+        seed = random.randint(1,1000)
         
     if split_type == 'random':
         if split_pattern is None or len(split_pattern) != 3 or not np.isclose(sum(split_pattern), 1):
